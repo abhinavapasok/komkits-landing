@@ -1,0 +1,358 @@
+<style>
+  /* ================= before / after slider (lab §12) ================= */
+  .ba{position:relative;border:1px solid var(--grey-200);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-z1);
+    height:420px;user-select:none;touch-action:none;--split:50%}
+  .ba-pane{position:absolute;inset:0;padding:28px}
+  .ba-before{background:var(--grey-100)}
+  .ba-after{background:var(--white);clip-path:inset(0 0 0 var(--split))}
+  .ba-tag{position:absolute;top:16px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;background:var(--ink-900);color:var(--white)}
+  .ba-before .ba-tag{left:16px;background:var(--ink-400)}
+  .ba-after .ba-tag{right:16px}
+  .ba-divider{position:absolute;top:0;bottom:0;left:var(--split);width:2px;background:var(--ink-900);transform:translateX(-1px)}
+  .ba-handle{position:absolute;top:50%;left:var(--split);transform:translate(-50%,-50%);
+    width:44px;height:44px;border-radius:50%;background:var(--ink-900);color:var(--white);
+    display:grid;place-items:center;cursor:ew-resize;box-shadow:var(--shadow-z2);border:2px solid var(--white);
+    transition:opacity .25s var(--ease),transform .25s var(--ease)}
+  .ba-handle.docked{opacity:0;transform:translate(-50%,-50%) scale(0.3);pointer-events:none}
+  .ba-handle svg{width:18px;height:18px}
+  /* before: the mess */
+  .mess{position:relative;height:100%;filter:grayscale(1)}
+  .mess .note{position:absolute;background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
+    padding:10px 14px;font-size:13px;color:var(--ink-500);box-shadow:var(--shadow-z1);font-weight:500}
+  .mess .note b{display:block;color:var(--ink-700);font-size:12px;margin-bottom:2px}
+  /* after: mini dashboard */
+  .mini-dash{display:grid;grid-template-columns:120px 1fr;gap:14px;height:100%;padding-top:34px}
+  .mini-side{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:12px 10px;display:flex;flex-direction:column;gap:8px}
+  .mini-side i{display:block;height:9px;border-radius:99px;background:var(--grey-200)}
+  .mini-side i:first-child{background:var(--ink-900);width:70%}
+  .mini-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .mini-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .mini-card{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:10px}
+  .mini-card i{display:block;height:7px;width:60%;border-radius:99px;background:var(--grey-200);margin-bottom:8px}
+  .mini-card b{font-size:15px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .mini-chart{flex:1;display:flex;align-items:flex-end;gap:8px;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:14px}
+  .mini-chart i{flex:1;background:var(--ink-700);border-radius:3px 3px 0 0;min-height:8%}
+  @media (max-width:720px){.ba{height:360px}.mini-cards{grid-template-columns:1fr 1fr}}
+
+  /* ---------- virtual cursor for before/after slider ---------- */
+  @media (hover:hover) and (pointer:fine){ .ba{cursor:none} .ba *{cursor:none} }
+  .ba-vcur{position:absolute;left:0;top:0;z-index:20;pointer-events:none;opacity:0;
+    transition:opacity .3s var(--ease);will-change:transform}
+  .ba-vcur.on{opacity:1}
+  .ba-vcur-icons{position:relative;display:block;width:22px;height:22px}
+  .ba-vcur .cur-arrow{position:absolute;left:0;top:0;width:18px;height:18px;fill:var(--ink-900);
+    filter:drop-shadow(0 2px 4px rgba(17,18,20,.35));
+    opacity:1;transform:scale(1);transition:all .25s cubic-bezier(.16,1,.3,1)}
+  .ba-vcur .cur-dragbar{
+    position:absolute;top:0;left:0;transform:translate(-50%,-50%) scale(0.3);
+    width:44px;height:44px;border-radius:50%;background:var(--ink-900);color:var(--white);
+    display:grid;place-items:center;box-shadow:var(--shadow-z2);border:2px solid var(--white);
+    opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1);
+  }
+  .ba-vcur .cur-dragbar svg{width:18px;height:18px;position:static;fill:none;filter:none}
+  .ba-vcur.morphed .cur-arrow{opacity:0;transform:scale(0) rotate(-45deg)}
+  .ba-vcur.morphed .cur-dragbar{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .ba-vcur.morphed.grabbing .cur-dragbar{transform:translate(-50%,-50%) scale(1.12);box-shadow:0 8px 24px rgba(17,18,20,.4)}
+  .ba-vcur-tag{position:absolute;left:16px;top:14px;background:var(--ink-900);color:var(--white);
+    font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;
+    box-shadow:var(--shadow-z1);transition:all .3s cubic-bezier(.16,1,.3,1)}
+  .ba-vcur.morphed .ba-vcur-tag{top:-36px;left:0;transform:translateX(-50%)}
+  .ba-vcur.quiet .ba-vcur-tag{opacity:0}
+</style>
+
+<!-- ================= 3. before / after slider (lab §12, keyboard a11y added) ================= -->
+<section>
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">Why KomKits</p>
+      <h2>Five apps and a spreadsheet, or one back office</h2>
+      <p class="lede">Drag the divider. Everything on the left is what running a business looks like today — everything on the right is KomKits.</p>
+    </div>
+    <div class="ba" id="ba" style="margin-top:44px">
+      <div class="ba-pane ba-before" aria-hidden="true">
+        <span class="ba-tag">Before — 5 apps + Excel</span>
+        <div class="mess">
+          <div class="note" style="top:52px;left:4%;transform:rotate(-2deg)"><b>sales_final_v7.xlsx</b>last edited… who knows</div>
+          <div class="note" style="top:120px;left:34%;transform:rotate(1.5deg)"><b>WhatsApp orders</b>scroll up to find them</div>
+          <div class="note" style="top:210px;left:10%;transform:rotate(2deg)"><b>Paper ledger</b>udhaar page 43</div>
+          <div class="note" style="top:190px;left:52%;transform:rotate(-1deg)"><b>Billing app</b>doesn’t talk to stock</div>
+          <div class="note" style="top:290px;left:28%;transform:rotate(-2.5deg)"><b>Reminders app</b>“follow up Sharma!!”</div>
+          <div class="note" style="top:70px;left:62%;transform:rotate(2.5deg)"><b>Calculator</b>GST, again</div>
+        </div>
+      </div>
+      <div class="ba-pane ba-after" aria-hidden="true">
+        <span class="ba-tag">After — one dashboard</span>
+        <div class="mini-dash">
+          <div class="mini-side"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="mini-main">
+            <div class="mini-cards">
+              <div class="mini-card"><i></i><b>₹4.2L</b></div>
+              <div class="mini-card"><i></i><b>₹47K</b></div>
+              <div class="mini-card"><i></i><b>312</b></div>
+            </div>
+            <div class="mini-chart" aria-hidden="true">
+              <i style="height:38%"></i><i style="height:55%"></i><i style="height:42%"></i><i style="height:66%"></i><i style="height:58%"></i><i style="height:80%"></i><i style="height:72%"></i><i style="height:90%"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-divider" aria-hidden="true"></div>
+      <div class="ba-handle" id="ba-handle" role="slider" tabindex="0" aria-label="Compare before and after"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-valuetext="50% KomKits">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg>
+      </div>
+
+      <!-- virtual cursor -->
+      <div class="ba-vcur" id="ba-vcur" aria-hidden="true">
+        <span class="ba-vcur-icons">
+          <svg class="cur-arrow" viewBox="0 0 24 24"><path d="M4 2l14 10-7 1-3 7z"/></svg>
+          <span class="cur-dragbar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg>
+          </span>
+        </span>
+        <span class="ba-vcur-tag" id="ba-vcur-tag">Drag to compare</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ===== before/after slider (lab §12): virtual cursor + hand morph + auto-demo + pointer capture ===== */
+(function(){
+  const ba=document.getElementById('ba'), handle=document.getElementById('ba-handle');
+  const vcur=document.getElementById('ba-vcur'), vcurTag=document.getElementById('ba-vcur-tag');
+  const finePointer = matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+  let currentPct = 50;
+  function set(pct){
+    pct=Math.max(4,Math.min(96,pct));
+    currentPct = pct;
+    ba.style.setProperty('--split',pct+'%');
+    handle.setAttribute('aria-valuenow',Math.round(pct));
+    handle.setAttribute('aria-valuetext',Math.round(pct)+'% KomKits');
+  }
+
+  /* --- interactive pointer tracking --- */
+  let mx=0, my=0, vx=0, vy=0, inside=false, userTookOver=false;
+  const K = reduceMotion ? 1 : 0.16;
+
+  function fromEvent(e){
+    const r=ba.getBoundingClientRect();
+    set((e.clientX-r.left)/r.width*100);
+  }
+
+  ba.addEventListener('pointerdown',e=>{
+    ba.setPointerCapture(e.pointerId);
+    fromEvent(e);
+    vcur.classList.add('grabbing');
+  });
+  ba.addEventListener('pointerup',()=>vcur.classList.remove('grabbing'));
+  ba.addEventListener('pointermove',e=>{
+    if(e.buttons) fromEvent(e);
+    const r=ba.getBoundingClientRect();
+    mx=e.clientX-r.left; my=e.clientY-r.top;
+    if(!inside){
+      vx=mx; vy=my;
+    }
+    inside=true;
+  });
+
+  if(finePointer){
+    ba.addEventListener('pointerenter',()=>{
+      inside=true;
+      vcur.classList.add('on');
+      if(!userTookOver){
+        userTookOver=true;
+        stopAutoDemo();
+        vcurTag.textContent='You';
+        vcur.classList.remove('quiet');
+        setTimeout(()=>vcur.classList.add('quiet'),3000);
+      }
+    });
+    ba.addEventListener('pointerleave',()=>{
+      inside=false;
+      vcur.classList.remove('on','grabbing','morphed');
+      handle.classList.remove('docked');
+      scheduleAutoDemo(3000);
+    });
+
+    (function frame(){
+      if(inside){
+        vx += (mx - vx) * K;
+        vy += (my - vy) * K;
+        vcur.style.transform = `translate(${vx}px,${vy}px)`;
+        /* only morph when cursor reaches directly above the drag handle circle */
+        const r = ba.getBoundingClientRect();
+        const dividerX = (currentPct / 100) * r.width;
+        const handleY = r.height * 0.5;
+        const distToHandle = Math.hypot(vx - dividerX, vy - handleY);
+        if(distToHandle < 38){
+          vcur.classList.add('morphed');
+          handle.classList.add('docked');
+        } else {
+          vcur.classList.remove('morphed');
+          handle.classList.remove('docked');
+        }
+      }
+      requestAnimationFrame(frame);
+    })();
+  }
+
+  handle.addEventListener('keydown',e=>{
+    const cur=+handle.getAttribute('aria-valuenow');
+    if(e.key==='ArrowLeft'||e.key==='ArrowDown'){set(cur-5);e.preventDefault();}
+    if(e.key==='ArrowRight'||e.key==='ArrowUp'){set(cur+5);e.preventDefault();}
+    if(e.key==='Home'){set(4);e.preventDefault();}
+    if(e.key==='End'){set(96);e.preventDefault();}
+  });
+
+  /* --- autonomous demo choreography --- */
+  let autoPlaying = false;
+  let autoTimers = [];
+  let autoTimeout = null;
+
+  function autoT(fn, ms){
+    const id = setTimeout(fn, reduceMotion ? 0 : ms);
+    autoTimers.push(id);
+    return id;
+  }
+  function stopAutoDemo(){
+    autoPlaying = false;
+    autoTimers.forEach(clearTimeout);
+    autoTimers = [];
+    clearTimeout(autoTimeout);
+    autoTimeout = null;
+  }
+  function scheduleAutoDemo(delay){
+    clearTimeout(autoTimeout);
+    autoTimeout = setTimeout(()=>{
+      if(!inside) startAutoDemo();
+    }, delay);
+  }
+
+  function startAutoDemo(){
+    if(inside || reduceMotion) return;
+    autoPlaying = true;
+    vcurTag.textContent = 'Drag to compare';
+    vcur.classList.remove('quiet');
+    vcur.classList.add('on');
+
+    const r = ba.getBoundingClientRect();
+    const w = r.width || 800;
+    const h = r.height || 420;
+
+    /* Start cursor at top right */
+    let curX = w * 0.82;
+    let curY = h * 0.28;
+    vcur.style.transform = `translate(${curX}px,${curY}px)`;
+    vcur.classList.remove('morphed','grabbing');
+    handle.classList.remove('docked');
+
+    let t = 600;
+
+    /* Move to center divider and morph into drag bar */
+    autoT(()=>{
+      if(!autoPlaying) return;
+      const targetX = (currentPct/100) * w;
+      const targetY = h * 0.5;
+      animateCursor(curX, curY, targetX, targetY, 700, ()=>{
+        if(!autoPlaying) return;
+        curX = targetX; curY = targetY;
+        vcur.classList.add('morphed');
+        handle.classList.add('docked');
+      });
+    }, t);
+    t += 900;
+
+    /* Grab and drag to 78% (show before) */
+    autoT(()=>{
+      if(!autoPlaying) return;
+      vcur.classList.add('grabbing');
+      const startP = currentPct;
+      const endP = 78;
+      animateSliderAndCursor(startP, endP, h*0.5, 900, ()=>{
+        if(!autoPlaying) return;
+        curX = (endP/100)*w;
+      });
+    }, t);
+    t += 1700;
+
+    /* Drag to 24% (show after) */
+    autoT(()=>{
+      if(!autoPlaying) return;
+      const startP = currentPct;
+      const endP = 24;
+      animateSliderAndCursor(startP, endP, h*0.5, 1100, ()=>{
+        if(!autoPlaying) return;
+        curX = (endP/100)*w;
+      });
+    }, t);
+    t += 2000;
+
+    /* Return to 50% */
+    autoT(()=>{
+      if(!autoPlaying) return;
+      const startP = currentPct;
+      const endP = 50;
+      animateSliderAndCursor(startP, endP, h*0.5, 800, ()=>{
+        if(!autoPlaying) return;
+        vcur.classList.remove('grabbing');
+        autoT(()=>{
+          if(!autoPlaying) return;
+          vcur.classList.remove('morphed');
+          handle.classList.remove('docked');
+          autoT(()=>{
+            if(!autoPlaying) return;
+            startAutoDemo();
+          }, 1200);
+        }, 600);
+      });
+    }, t);
+  }
+
+  function animateCursor(x0, y0, x1, y1, dur, onDone){
+    const t0 = performance.now();
+    (function f(now){
+      if(!autoPlaying) return;
+      const p = Math.min(1, (now-t0)/dur);
+      const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+      const x = x0 + (x1-x0)*ease;
+      const y = y0 + (y1-y0)*ease;
+      vcur.style.transform = `translate(${x}px,${y}px)`;
+      if(p < 1) requestAnimationFrame(f);
+      else if(onDone) onDone();
+    })(t0);
+  }
+
+  function animateSliderAndCursor(p0, p1, yPos, dur, onDone){
+    const t0 = performance.now();
+    const r = ba.getBoundingClientRect();
+    const w = r.width || 800;
+    (function f(now){
+      if(!autoPlaying) return;
+      const p = Math.min(1, (now-t0)/dur);
+      const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+      const val = p0 + (p1-p0)*ease;
+      set(val);
+      const x = (val/100)*w;
+      vcur.style.transform = `translate(${x}px,${yPos}px)`;
+      if(p < 1) requestAnimationFrame(f);
+      else if(onDone) onDone();
+    })(t0);
+  }
+
+  if(!reduceMotion){
+    const obs = new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting && !inside && !autoPlaying){
+          scheduleAutoDemo(500);
+        } else if(!entry.isIntersecting){
+          stopAutoDemo();
+        }
+      });
+    }, {threshold:0.35});
+    obs.observe(ba);
+  }
+})();
+</script>

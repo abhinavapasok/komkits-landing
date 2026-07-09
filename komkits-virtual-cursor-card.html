@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KomKits — Virtual Cursor Card (standalone)</title>
+<!--
+  Standalone prototype: a demo card with a VIRTUAL mouse inside.
+  - The real cursor is hidden inside the stage (cursor:none); a ghost cursor
+    ("You") trails it with a lerp delay.
+  - Interactions are resolved at the GHOST's position, not the real pointer:
+    hover states and clicks land where the ghost is. Move fast and click early
+    and you miss — the lag IS the toy.
+  - Inside the card: a tiny real slice of the platform — sell items, watch the
+    invoice draft build with GST, record the payment.
+  - Touch devices: ghost hides, taps work directly. Keyboard clicks (Enter on a
+    focused button) bypass the ghost and act on the real target.
+  Integration note: everything is scoped to .vc-card / the IIFE at the bottom —
+  lift both into komkits-landing-mockup.html as-is.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#111214; --ink-700:#3F3F46; --ink-500:#6B7280; --ink-400:#9CA3AF;
+    --grey-50:#FAFAFA; --grey-100:#F4F4F5; --grey-200:#E4E4E7; --white:#FFFFFF;
+    --success:#16A34A; --success-bg:#F0FDF4; --success-bd:#BBF7D0;
+    --warning:#D97706; --warning-bg:#FFFBEB; --warning-bd:#FDE68A;
+    --radius:4px;
+    --shadow-z1:0 1px 2px rgba(17,18,20,.06),0 1px 3px rgba(17,18,20,.08);
+    --shadow-z2:0 8px 24px rgba(17,18,20,.10);
+    --dur:200ms; --ease:cubic-bezier(.2,.8,.4,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none !important}
+  body{
+    font-family:'Public Sans',system-ui,sans-serif;background:var(--grey-50);color:var(--ink-900);
+    font-size:16px;line-height:1.5;min-height:100dvh;display:grid;place-items:center;padding:32px 16px;
+  }
+  .demo-note{position:fixed;top:16px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--ink-400);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+
+  /* ---------- card shell (matches landing .demo-card) ---------- */
+  .vc-card{width:440px;max-width:100%;border:1px solid var(--grey-200);border-radius:8px;background:var(--white);box-shadow:var(--shadow-z2);overflow:hidden}
+  .vc-stage{position:relative;background:var(--grey-100);border-bottom:1px solid var(--grey-200);padding:18px;min-height:360px;overflow:hidden;user-select:none;-webkit-user-select:none}
+  @media (hover:hover) and (pointer:fine){ .vc-stage{cursor:none} .vc-stage *{cursor:none} }
+  .vc-meta{padding:18px 20px 20px}
+  .vc-meta h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+  .vc-meta p{font-size:13.5px;color:var(--ink-500);margin-top:6px}
+
+  /* ---------- mini app ---------- */
+  .app{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;box-shadow:var(--shadow-z1);overflow:hidden}
+  .app-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--grey-200);background:var(--grey-50);
+    font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400)}
+  .app-head .dot{width:7px;height:7px;border-radius:50%;background:var(--grey-200)}
+  .app-body{padding:12px 14px}
+  .sect-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-400);margin:2px 0 8px}
+  .item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--grey-200);font-size:13px;font-weight:500}
+  .item-row .stock{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;transition:transform .25s var(--ease)}
+  .item-row .stock.flash{transform:scale(1.3)}
+  .item-row.out{opacity:.5}
+  .sell-btn{font:inherit;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:var(--radius);
+    border:1px solid var(--grey-200);background:var(--white);transition:border-color .15s var(--ease),background .15s var(--ease),transform .1s var(--ease)}
+  .sell-btn[disabled]{opacity:.4}
+  /* hover driven by the GHOST cursor, not the real one */
+  .vhover.sell-btn,.vhover.pay-btn,.vhover.reset-btn{border-color:var(--ink-900);background:var(--grey-100)}
+  .vpress{transform:scale(.94)}
+
+  .inv{margin-top:14px;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:6px;padding:10px 12px}
+  .inv-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .inv-top b{font-size:12px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--grey-200);background:var(--white);color:var(--ink-700);margin-left:auto}
+  .chip.paid{background:var(--success-bg);border-color:var(--success-bd);color:var(--success)}
+  .inv-lines{min-height:44px}
+  .inv-line{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:var(--ink-700);animation:lineIn .25s var(--ease)}
+  @keyframes lineIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .inv-line .a{font-variant-numeric:tabular-nums;font-weight:600}
+  .inv-empty{font-size:12px;color:var(--ink-400);padding:12px 0;text-align:center}
+  .inv-tot{display:flex;justify-content:space-between;border-top:1px solid var(--grey-200);margin-top:6px;padding-top:8px;font-size:12.5px;font-weight:700}
+  .inv-tot .a{font-variant-numeric:tabular-nums}
+  .inv-actions{display:flex;gap:8px;margin-top:10px}
+  .pay-btn,.reset-btn{font:inherit;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:var(--radius);transition:border-color .15s var(--ease),background .15s var(--ease),transform .1s var(--ease)}
+  .pay-btn{background:var(--ink-900);color:var(--white);border:1px solid var(--ink-900)}
+  .pay-btn[disabled]{opacity:.4}
+  .vhover.pay-btn{background:#26272B}
+  .reset-btn{background:var(--white);border:1px solid var(--grey-200)}
+
+  /* ---------- the ghost cursor ---------- */
+  .v-cursor{position:absolute;left:0;top:0;z-index:10;pointer-events:none;opacity:0;transition:opacity .25s var(--ease);will-change:transform}
+  .v-cursor svg{width:15px;height:15px;fill:var(--ink-900);filter:drop-shadow(0 1px 2px rgba(17,18,20,.35))}
+  .v-cursor .tag{position:absolute;left:11px;top:13px;background:var(--ink-900);color:var(--white);
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;transition:opacity .4s var(--ease)}
+  .v-cursor.quiet .tag{opacity:0} /* "You" fades once it has introduced itself */
+  .v-cursor.on{opacity:1}
+  .v-cursor .inner{transition:transform .12s var(--ease)}
+  .v-cursor.press .inner{transform:scale(.8)}
+  /* the AI teammate cursor — green is the reserved "AI feature" semantic */
+  .v-cursor.ai{opacity:1}
+  .v-cursor.ai svg{fill:var(--success)}
+  .v-cursor.ai .tag{background:var(--success);left:11px;top:-16px} /* tag above the arrow — never covers what it points at */
+  .v-cursor.ai.talking .tag{opacity:0}                             /* while speaking, the bubble is the identity */
+  .ai-bubble{position:absolute;left:0;top:0;z-index:11;font:inherit;font-size:11px;font-weight:600;
+    background:var(--white);border:1px solid var(--success-bd);color:var(--ink-900);
+    padding:5px 11px;border-radius:999px;box-shadow:var(--shadow-z1);white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .25s var(--ease);will-change:transform}
+  .ai-bubble.on{opacity:1}
+  .ai-bubble.act{pointer-events:auto;border-color:var(--success);background:var(--success-bg);color:var(--success)}
+  .v-ripple{position:absolute;z-index:9;width:26px;height:26px;border-radius:50%;border:2px solid var(--ink-900);
+    pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  .v-ripple.go{animation:rip .45s var(--ease)}
+  @keyframes rip{0%{opacity:.5;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+
+  button:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+  .hint{position:absolute;right:14px;bottom:12px;font-size:11px;color:var(--ink-400);transition:opacity .4s var(--ease)}
+  .hint.off{opacity:0}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<p class="demo-note">Prototype — virtual cursor card</p>
+
+<div class="vc-card">
+  <div class="vc-stage" id="stage">
+    <div class="app" aria-label="Mini KomKits: sell items and settle the invoice">
+      <div class="app-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span> KomKits · quick sale</div>
+      <div class="app-body">
+        <p class="sect-label">Items</p>
+        <div class="item-row" data-item="Cotton Saree" data-price="1450" data-stock="4">
+          <span>Cotton Saree · SR-104</span><b class="stock">4</b>
+          <button class="sell-btn" data-act="sell" type="button">Sell</button>
+        </div>
+        <div class="item-row" data-item="Silk Dupatta" data-price="899" data-stock="3">
+          <span>Silk Dupatta · DP-221</span><b class="stock">3</b>
+          <button class="sell-btn" data-act="sell" type="button">Sell</button>
+        </div>
+        <div class="item-row" data-item="Kurta Set" data-price="2100" data-stock="2">
+          <span>Kurta Set · KS-310</span><b class="stock">2</b>
+          <button class="sell-btn" data-act="sell" type="button">Sell</button>
+        </div>
+
+        <div class="inv">
+          <div class="inv-top"><b>Invoice draft</b><span class="chip" id="inv-chip">Draft</span></div>
+          <div class="inv-lines" id="inv-lines"><p class="inv-empty" id="inv-empty">Sell something — lines appear here</p></div>
+          <div class="inv-tot"><span>Total incl. GST 5%</span><span class="a" id="inv-total">₹0</span></div>
+          <div class="inv-actions">
+            <button class="pay-btn" id="pay-btn" data-act="pay" type="button" disabled>Record payment</button>
+            <button class="reset-btn" data-act="reset" type="button">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- the ghost -->
+    <div class="v-cursor" id="vcur" aria-hidden="true">
+      <span class="inner" style="display:block">
+        <svg viewBox="0 0 24 24"><path d="M4 2l14 10-7 1-3 7z"/></svg>
+        <span class="tag">You</span>
+      </span>
+    </div>
+    <div class="v-ripple" id="vrip" aria-hidden="true"></div>
+
+    <!-- the AI teammate -->
+    <div class="v-cursor ai" id="aicur" aria-hidden="true">
+      <span class="inner" style="display:block">
+        <svg viewBox="0 0 24 24"><path d="M4 2l14 10-7 1-3 7z"/></svg>
+        <span class="tag">KomKits AI</span>
+      </span>
+    </div>
+    <button class="ai-bubble" id="aibubble" data-act="ai-pay" type="button" tabindex="-1"></button>
+
+    <p class="hint" id="hint">move your mouse in — the grey one is you</p>
+  </div>
+
+  <div class="vc-meta">
+    <h3>Your hand — and an AI teammate</h3>
+    <p>The grey cursor is you, on a small piece of KomKits. The green one is the AI: it watches the work and offers the next step.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer  = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const stage = document.getElementById('stage');
+  const cur   = document.getElementById('vcur');
+  const rip   = document.getElementById('vrip');
+  const hint  = document.getElementById('hint');
+
+  /* ---------- ghost cursor: lerp-follow the real pointer ---------- */
+  const K = reduceMotion ? 1 : 0.14;      /* follow factor per frame — the delay */
+  let mx=0, my=0, vx=0, vy=0, inside=false, started=false;
+
+  if (finePointer){
+    stage.addEventListener('pointermove', e=>{
+      const r = stage.getBoundingClientRect();
+      mx = e.clientX - r.left; my = e.clientY - r.top;
+      if(!started){ started=true; vx=mx; vy=my; hint.classList.add('off'); setTimeout(()=>cur.classList.add('quiet'),4000); }
+      inside = true;
+    });
+    stage.addEventListener('pointerenter', ()=>{ inside=true; cur.classList.add('on'); });
+    stage.addEventListener('pointerleave', ()=>{ inside=false; cur.classList.remove('on'); });
+    stage.addEventListener('pointerdown',  ()=>cur.classList.add('press'));
+    addEventListener('pointerup',          ()=>cur.classList.remove('press'));
+
+    let prevHover=null;
+    let lx=-1, ly=-1; /* last hit-tested ghost position */
+    (function frame(){
+      vx += (mx - vx) * K;
+      vy += (my - vy) * K;
+      if (Math.abs(mx-vx)<.4 && Math.abs(my-vy)<.4){ vx=mx; vy=my; } /* settle — stop sub-pixel churn */
+      cur.style.transform = `translate(${vx}px,${vy}px)`;
+      /* hover is decided by the ghost, not the real pointer; hit-test only when it moved */
+      if (Math.abs(vx-lx)>.5 || Math.abs(vy-ly)>.5){
+        lx=vx; ly=vy;
+        const el = ghostTarget();
+        const hit = el && el.closest('[data-act]');
+        if (hit !== prevHover){
+          if (prevHover) prevHover.classList.remove('vhover');
+          if (hit && !hit.disabled) hit.classList.add('vhover');
+          prevHover = hit;
+        }
+      }
+      requestAnimationFrame(frame);
+    })();
+    stage.addEventListener('pointercancel', ()=>{ inside=false; cur.classList.remove('on','press'); });
+  }
+
+  function ghostTarget(){
+    const r = stage.getBoundingClientRect();
+    return document.elementFromPoint(r.left + vx, r.top + vy);
+  }
+
+  /* ---------- clicks: resolved at the ghost's position ---------- */
+  stage.addEventListener('click', e=>{
+    let hit;
+    if (finePointer && e.detail !== 0){          /* real mouse click → use ghost pos */
+      const el = ghostTarget();
+      hit = el && el.closest('[data-act]');
+      e.preventDefault(); e.stopPropagation();   /* the real target never fires */
+      ripple(vx, vy);
+    } else {                                     /* touch tap or keyboard Enter → direct */
+      hit = e.target.closest && e.target.closest('[data-act]');
+    }
+    if (hit && !hit.disabled) run(hit);
+  }, true);
+
+  function ripple(x,y){
+    rip.style.left=x+'px'; rip.style.top=y+'px';
+    rip.classList.remove('go'); void rip.offsetWidth; rip.classList.add('go');
+  }
+
+  /* ---------- the mini app ---------- */
+  const linesEl = document.getElementById('inv-lines');
+  const emptyEl = document.getElementById('inv-empty');
+  const totalEl = document.getElementById('inv-total');
+  const chipEl  = document.getElementById('inv-chip');
+  const payBtn  = document.getElementById('pay-btn');
+  const rows    = [...stage.querySelectorAll('.item-row')];
+  const inr = n => '₹' + n.toLocaleString('en-IN');
+  let lines = {}, sub = 0, paid = false;
+
+  function tickTotal(from, to){
+    if (reduceMotion || from===to){ totalEl.textContent = inr(to); return; }
+    const t0 = performance.now();
+    (function f(now){
+      const p = Math.min(1,(now-t0)/400);
+      totalEl.textContent = inr(Math.round(from + (to-from)*(1-Math.pow(1-p,3))));
+      if (p<1) requestAnimationFrame(f);
+    })(t0);
+  }
+  function renderLines(){
+    linesEl.querySelectorAll('.inv-line').forEach(l=>l.remove());
+    const names = Object.keys(lines);
+    emptyEl.hidden = names.length>0;
+    names.forEach(nm=>{
+      const l = document.createElement('div'); l.className='inv-line';
+      l.innerHTML = `<span>${nm} ×${lines[nm].qty}</span><span class="a">${inr(lines[nm].qty*lines[nm].price)}</span>`;
+      linesEl.appendChild(l);
+    });
+    payBtn.disabled = names.length===0 || paid;
+  }
+  function run(btn){
+    const act = btn.dataset.act;
+    if (act==='ai-pay'){                    /* the AI presses the button itself */
+      if (paid || !Object.keys(lines).length) return;
+      aiCur.classList.add('press'); setTimeout(()=>aiCur.classList.remove('press'),180);
+      hush(); ripple(ax,ay);
+      run(payBtn);
+      say('Done ✓',{ms:1500});
+      return;
+    }
+    if (act==='sell' && !paid){
+      const row = btn.closest('.item-row');
+      const st = row.querySelector('.stock');
+      let n = +st.textContent;
+      if (n===0) return;
+      st.textContent = --n;
+      st.classList.add('flash'); setTimeout(()=>st.classList.remove('flash'),350);
+      if (n===0){ row.classList.add('out'); btn.disabled=true; btn.classList.remove('vhover'); }
+      const nm = row.dataset.item, price = +row.dataset.price;
+      lines[nm] = lines[nm] || {qty:0, price};
+      lines[nm].qty++;
+      const prev = sub; sub += price;
+      renderLines();
+      tickTotal(Math.round(prev*1.05), Math.round(sub*1.05));
+      /* AI reacts: inspects the new line, warns on stock-out, then nudges */
+      const line = linesEl.querySelector('.inv-line:last-child');
+      if (line){
+        const c = rectC(line, 36, -14); /* beside the line, not on it */
+        aiGo(c.x, c.y, ()=>say(n===0 ? nm+' is out — reorder?' : 'Logged ✓'));
+      }
+      armIdle();
+    }
+    if (act==='pay' && !paid && Object.keys(lines).length){
+      paid = true;
+      chipEl.textContent='Paid'; chipEl.className='chip paid';
+      payBtn.textContent='Payment recorded ✓'; payBtn.disabled=true;
+      clearTimeout(idleT); hush();
+      const c = rectC(chipEl, -chipEl.offsetWidth-14, 6); /* left of the chip, clear of it */
+      aiGo(c.x, c.y, ()=>{ say('Paid & reconciled ✓',{ms:1800}); setTimeout(park,1900); });
+    }
+    if (act==='reset'){
+      lines={}; const prev=sub; sub=0; paid=false;
+      chipEl.textContent='Draft'; chipEl.className='chip';
+      payBtn.textContent='Record payment';
+      rows.forEach(row=>{
+        row.classList.remove('out');
+        row.querySelector('.stock').textContent=row.dataset.stock;
+        row.querySelector('.sell-btn').disabled=false;
+      });
+      renderLines();
+      tickTotal(Math.round(prev*1.05), 0);
+      clearTimeout(idleT); hush(); park();
+    }
+  }
+
+  /* ---------- AI teammate cursor: watches, reacts, offers the next step ---------- */
+  const aiCur = document.getElementById('aicur');
+  const aiBub = document.getElementById('aibubble');
+  const AIK = reduceMotion ? 1 : 0.08;     /* slower, calmer than the ghost */
+  let ax=0, ay=0, atx=0, aty=0, aiArrive=null, idleT=null;
+  function rectC(el, dx=0, dy=0){
+    const r=el.getBoundingClientRect(), s=stage.getBoundingClientRect();
+    return {x:r.left-s.left+r.width/2+dx, y:r.top-s.top+r.height/2+dy};
+  }
+  function aiGo(x,y,cb){ atx=x; aty=y; aiArrive=cb||null; }
+  function park(){ aiGo(stage.clientWidth-64, 40); }
+  function say(txt, opts={}){
+    aiBub.textContent=txt;
+    aiBub.classList.add('on'); aiBub.classList.toggle('act', !!opts.act);
+    aiCur.classList.add('talking');
+    clearTimeout(say.t);
+    if(!opts.hold) say.t=setTimeout(hush, opts.ms||1600);
+  }
+  function hush(){ aiBub.classList.remove('on','act'); aiCur.classList.remove('talking'); }
+  function armIdle(){
+    clearTimeout(idleT);
+    idleT=setTimeout(()=>{
+      if (Object.keys(lines).length && !paid){
+        /* approach from above — arrow tip just over the button, nothing covering it */
+        const p=rectC(payBtn, -8, -payBtn.offsetHeight/2-18);
+        aiGo(p.x, p.y, ()=>say('Shall I settle it? Click me', {hold:true, act:true}));
+      }
+    }, 3500);
+  }
+  (function aiFrame(){
+    ax += (atx-ax)*AIK; ay += (aty-ay)*AIK;
+    aiCur.style.transform = `translate(${ax}px,${ay}px)`;
+    /* bubble ABOVE the cursor by default (clear of whatever it points at); flips below near the top; clamps to the stage */
+    let bx=ax+14, by=ay-42;
+    const bw=aiBub.offsetWidth||130;
+    if (ay < 56) by = ay+26;
+    bx = Math.max(8, Math.min(bx, stage.clientWidth-bw-8));
+    aiBub.style.transform = `translate(${bx}px,${by}px)`;
+    if (aiArrive && Math.abs(atx-ax)<2 && Math.abs(aty-ay)<2){ const f=aiArrive; aiArrive=null; f(); }
+    requestAnimationFrame(aiFrame);
+  })();
+  ax = atx = stage.clientWidth-64; ay = aty = 40;  /* start parked, top-right */
+
+  renderLines();
+})();
+</script>
+</body>
+</html>

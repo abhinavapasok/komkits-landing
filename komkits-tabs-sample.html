@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KomKits — how a bill moves through the system (tabs)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F6F3;
+    --surface:#FFFFFF;
+    --border:#DEDCD3;
+    --ink:#16150F;
+    --muted:#6E6C61;
+    --faint:#B9B7AB;
+    --accent-soft:#EFEEE7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Public Sans',sans-serif;
+    line-height:1.6;
+  }
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:5rem 1.5rem 7rem;
+  }
+  .intro{ max-width:640px; margin:0 0 3rem; }
+  .eyebrow{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin:0 0 0.9rem;
+  }
+  h1{
+    font-size:clamp(28px,4.2vw,38px);
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 1rem;
+    line-height:1.15;
+  }
+  p.lede{
+    color:var(--muted);
+    font-size:16.5px;
+    max-width:54ch;
+    margin:0;
+  }
+
+  /* --- tab rail --- */
+  .tab-rail{
+    display:flex;
+    gap:6px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:2.5rem;
+    overflow-x:auto;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  .tab-rail::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    appearance:none;
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0.9rem 1.1rem 1rem;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    color:var(--faint);
+    white-space:nowrap;
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:color 0.2s ease;
+  }
+  .tab-btn .num{
+    font-size:11px;
+    font-weight:700;
+    color:var(--faint);
+    border:1px solid var(--border);
+    width:20px;height:20px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:all 0.2s ease;
+  }
+  .tab-btn:hover{ color:var(--ink); }
+  .tab-btn.active{ color:var(--ink); }
+  .tab-btn.active .num{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:#fff;
+  }
+  .tab-btn::after{
+    content:'';
+    position:absolute;
+    left:0; right:0; bottom:-1px;
+    height:2px;
+    background:var(--ink);
+    transform:scaleX(0);
+    transition:transform 0.2s ease;
+  }
+  .tab-btn.active::after{ transform:scaleX(1); }
+  .tab-btn:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
+
+  /* --- panel --- */
+  .panel-stage{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:3rem;
+    align-items:center;
+    min-height:340px;
+  }
+  @media (max-width:760px){
+    .panel-stage{ grid-template-columns:1fr; gap:2rem; }
+  }
+
+  .panel-copy{ position:relative; }
+  .panel{
+    display:none;
+    animation:fadeIn 0.28s ease;
+  }
+  .panel.active{ display:block; }
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .panel .step-tag{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:0 0 0.6rem;
+  }
+  .panel h3{
+    font-size:23px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 0.7rem;
+  }
+  .panel p{
+    color:var(--muted);
+    font-size:15.5px;
+    margin:0 0 0.8rem;
+    max-width:42ch;
+  }
+  .panel .note{
+    font-size:13px;
+    font-style:italic;
+    color:var(--faint);
+    margin:0;
+  }
+  .panel .nav-hint{
+    margin-top:1.4rem;
+    display:flex;
+    gap:0.6rem;
+  }
+  .nav-hint button{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    padding:0.5rem 0.9rem;
+    border-radius:7px;
+    cursor:pointer;
+    transition:border-color 0.2s ease, background 0.2s ease;
+  }
+  .nav-hint button:hover{ border-color:var(--ink); background:var(--accent-soft); }
+  .nav-hint button:disabled{ opacity:0.35; cursor:default; }
+  .nav-hint button:disabled:hover{ background:var(--surface); border-color:var(--border); }
+
+  /* --- diagram --- */
+  .diagram-stage{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .diagram-layer{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:0.9rem 1.1rem;
+    opacity:0.4;
+    transform:scale(0.98);
+    transition:opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    cursor:pointer;
+  }
+  .diagram-layer.active{
+    opacity:1;
+    transform:scale(1);
+    border-color:var(--ink);
+    box-shadow:0 6px 16px rgba(22,21,15,0.08);
+  }
+  .diagram-layer .name{
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .diagram-layer .sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .diagram-connector{
+    display:flex;
+    justify-content:center;
+    height:12px;
+  }
+  .diagram-connector svg path{
+    stroke:var(--faint);
+    stroke-width:2;
+    fill:none;
+    transition:stroke 0.3s ease;
+  }
+  .diagram-connector.active svg path{ stroke:var(--ink); }
+
+  footer{
+    max-width:640px;
+    margin:5rem auto 0;
+    padding-top:2.5rem;
+    border-top:1px solid var(--border);
+    color:var(--muted);
+    font-size:14px;
+  }
+  code.inline{
+    font-family:ui-monospace,monospace;
+    background:var(--accent-soft);
+    border:1px solid var(--border);
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="intro">
+    <p class="eyebrow">Architecture · sample (click-through)</p>
+    <h1>What happens between a sale and a filed return</h1>
+    <p class="lede">Same five layers as the scroll version, but no scroll math, no sticky positioning, no scroll-jacking on mobile. Click a step, or use the arrows — the diagram and copy update together, instantly.</p>
+  </div>
+
+  <div class="tab-rail" role="tablist" aria-label="Billing pipeline steps" id="tab-rail">
+    <button class="tab-btn active" role="tab" aria-selected="true" data-step="0"><span class="num">1</span>Capture</button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-step="1"><span class="num">2</span>Discount</button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-step="2"><span class="num">3</span>Tax</button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-step="3"><span class="num">4</span>Invoice</button>
+    <button class="tab-btn" role="tab" aria-selected="false" data-step="4"><span class="num">5</span>Filing</button>
+  </div>
+
+  <div class="panel-stage">
+    <div class="diagram-stage" id="diagram-stage">
+      <div class="diagram-layer active" data-layer="0">
+        <div class="name">Sale &amp; POS capture</div>
+        <div class="sub">Items, quantities, customer</div>
+      </div>
+      <div class="diagram-connector" data-conn="0"><svg width="16" height="12"><path d="M8 0 L8 12 M3 7 L8 12 L13 7"/></svg></div>
+
+      <div class="diagram-layer" data-layer="1">
+        <div class="name">Discount engine</div>
+        <div class="sub">Line and header discounts</div>
+      </div>
+      <div class="diagram-connector" data-conn="1"><svg width="16" height="12"><path d="M8 0 L8 12 M3 7 L8 12 L13 7"/></svg></div>
+
+      <div class="diagram-layer" data-layer="2">
+        <div class="name">Tax engine</div>
+        <div class="sub">GST rate resolution</div>
+      </div>
+      <div class="diagram-connector" data-conn="2"><svg width="16" height="12"><path d="M8 0 L8 12 M3 7 L8 12 L13 7"/></svg></div>
+
+      <div class="diagram-layer" data-layer="3">
+        <div class="name">Invoice generation</div>
+        <div class="sub">Compliant invoice composed</div>
+      </div>
+      <div class="diagram-connector" data-conn="3"><svg width="16" height="12"><path d="M8 0 L8 12 M3 7 L8 12 L13 7"/></svg></div>
+
+      <div class="diagram-layer" data-layer="4">
+        <div class="name">Filing &amp; reports</div>
+        <div class="sub">GSTR-ready summaries</div>
+      </div>
+    </div>
+
+    <div class="panel-copy">
+      <div class="panel active" data-panel="0">
+        <p class="step-tag">01 · Capture</p>
+        <h3>Every bill starts at the point of sale</h3>
+        <p>Whether it's rung up on the POS or entered as a sales order, the raw line items are the single source of truth for everything downstream.</p>
+      </div>
+      <div class="panel" data-panel="1">
+        <p class="step-tag">02 · Discounting</p>
+        <h3>Discounts apply before tax touches the price</h3>
+        <p>Line-level discounts resolve first, then header-level ones — the order matters, because it changes the taxable value.</p>
+        <p class="note">This is the sequencing that trips up tax-inclusive pricing if it's done in the wrong order.</p>
+      </div>
+      <div class="panel" data-panel="2">
+        <p class="step-tag">03 · Tax</p>
+        <h3>GST resolves per line, not per invoice</h3>
+        <p>Each line can carry its own rate and inclusive/exclusive behavior, so mixed-rate invoices still net out correctly.</p>
+      </div>
+      <div class="panel" data-panel="3">
+        <p class="step-tag">04 · Invoicing</p>
+        <h3>The invoice is assembled, not typed</h3>
+        <p>By the time a template renders, every number on it — subtotal, discount, tax, total — has already been decided upstream.</p>
+      </div>
+      <div class="panel" data-panel="4">
+        <p class="step-tag">05 · Filing</p>
+        <h3>Nothing is re-entered for the return</h3>
+        <p>The same figures that printed on the invoice are what roll up into the filing summary — one calculation, two destinations.</p>
+      </div>
+
+      <div class="nav-hint">
+        <button id="prev-btn" aria-label="Previous step">← Prev</button>
+        <button id="next-btn" aria-label="Next step">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <h2 style="font-size:18px;font-weight:700;margin:0 0 0.5rem;">Why this instead of scroll-scrub</h2>
+    <p>No <code class="inline">getBoundingClientRect()</code>, no scroll listener, no sticky-positioning edge cases on iOS Safari. State is just <code class="inline">currentStep</code>, set on click and rendered everywhere at once — the tab, the panel, and the diagram layer all read from the same variable. Simpler to maintain, and works identically whether someone taps, clicks, or uses arrow keys.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var steps = 5;
+  var current = 0;
+
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.panel');
+  var layers = document.querySelectorAll('.diagram-layer');
+  var connectors = document.querySelectorAll('.diagram-connector');
+  var prevBtn = document.getElementById('prev-btn');
+  var nextBtn = document.getElementById('next-btn');
+
+  function render(){
+    tabBtns.forEach(function(b,i){
+      b.classList.toggle('active', i === current);
+      b.setAttribute('aria-selected', i === current ? 'true' : 'false');
+    });
+    panels.forEach(function(p,i){ p.classList.toggle('active', i === current); });
+    layers.forEach(function(l,i){ l.classList.toggle('active', i === current); });
+    connectors.forEach(function(c,i){ c.classList.toggle('active', i < current); });
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === steps - 1;
+  }
+
+  function goTo(idx){
+    current = Math.max(0, Math.min(steps - 1, idx));
+    render();
+  }
+
+  tabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){ goTo(parseInt(btn.dataset.step, 10)); });
+  });
+  layers.forEach(function(layer){
+    layer.addEventListener('click', function(){ goTo(parseInt(layer.dataset.layer, 10)); });
+  });
+  prevBtn.addEventListener('click', function(){ goTo(current - 1); });
+  nextBtn.addEventListener('click', function(){ goTo(current + 1); });
+
+  document.getElementById('tab-rail').addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight'){ goTo(current + 1); }
+    if(e.key === 'ArrowLeft'){ goTo(current - 1); }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

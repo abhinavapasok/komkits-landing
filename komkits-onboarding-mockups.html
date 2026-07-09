@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KomKits — Onboarding &amp; Auth Flow Mockups</title>
+<!--
+  KomKits Public Onboarding & Auth — HTML mockups (ticket 6 reference)
+  Spec: vault/specs/KD-NNN-public-onboarding.md
+  Pattern: Minimal Single Column · Style: Trust & Authority (ui-ux-pro-max)
+  Tokens: Public Sans, monochrome black primary, 4px radius, 8px grid,
+          semantic color for status only (spec §7).
+  Screens: 1 /register · 2 /check-mail · 3 /verify-code · 4 /onboarding
+           5 /login · 6 /forgot-business-code · 7 /verify?token= (link path)
+  States:  onboarding first-business empty state · provisioning progress ·
+           verify-link verifying/success/expired
+  Prototype only — interactions are simulated (no network calls).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* KomKits tokens (spec §7 — monochrome first) */
+    --ink-900:#111214;      /* primary / brand black */
+    --ink-700:#3F3F46;
+    --ink-500:#6B7280;      /* secondary text */
+    --ink-400:#9CA3AF;
+    --grey-50:#FAFAFA;      /* page bg */
+    --grey-100:#F4F4F5;
+    --grey-200:#E4E4E7;     /* borders */
+    --white:#FFFFFF;
+    /* semantic — status only, never decoration */
+    --success:#16A34A;
+    --error:#DC2626;
+    --warning:#D97706;
+    --info:#2563EB;
+    --radius:4px;
+    --shadow-z1:0 1px 2px rgba(17,18,20,.06),0 1px 3px rgba(17,18,20,.08);
+    --shadow-z2:0 4px 12px rgba(17,18,20,.08);
+    --space-1:8px; --space-2:16px; --space-3:24px; --space-4:32px; --space-6:48px;
+    --dur:200ms; --ease:cubic-bezier(.2,.8,.4,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none !important} /* author display:flex on .ok-msg/.error-msg would otherwise defeat the hidden attribute */
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Public Sans',system-ui,-apple-system,sans-serif;
+    background:var(--grey-50);color:var(--ink-900);
+    font-size:16px;line-height:1.5;
+    min-height:100dvh;
+  }
+  /* ---------- prototype chrome (not part of the design) ---------- */
+  .proto-nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:100;
+    background:var(--ink-900);color:var(--white);
+    display:flex;align-items:center;gap:4px;
+    padding:8px 12px;overflow-x:auto;
+    font-size:12px;
+  }
+  .proto-nav span{opacity:.5;margin-right:8px;white-space:nowrap;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+  .proto-nav button{
+    font:inherit;color:var(--white);background:transparent;
+    border:1px solid rgba(255,255,255,.25);border-radius:var(--radius);
+    padding:8px 12px;cursor:pointer;white-space:nowrap;min-height:36px;
+    transition:background var(--dur) var(--ease);
+  }
+  .proto-nav button:hover{background:rgba(255,255,255,.12)}
+  .proto-nav button[aria-current="true"]{background:var(--white);color:var(--ink-900);border-color:var(--white);font-weight:600}
+  /* ---------- auth shell ---------- */
+  .screen{display:none;min-height:100dvh;padding:var(--space-4) var(--space-2) 96px}
+  .screen.active{display:flex;flex-direction:column;align-items:center}
+  .shell{width:100%;max-width:440px;margin:auto}
+  .shell.wide{max-width:640px}
+  .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:var(--space-4)}
+  .brand-mark{width:32px;height:32px;border-radius:var(--radius);background:var(--ink-900);display:grid;place-items:center}
+  .brand-mark svg{width:18px;height:18px;stroke:var(--white)}
+  .brand-name{font-weight:800;font-size:20px;letter-spacing:-.02em}
+  .zone-tag{
+    display:block;text-align:center;margin-bottom:var(--space-2);
+    font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400);
+  }
+  .card{
+    background:var(--white);border:1px solid var(--grey-200);
+    border-radius:var(--radius);box-shadow:var(--shadow-z1);
+    padding:var(--space-4);
+  }
+  h1{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
+  .sub{color:var(--ink-500);font-size:15px;margin-top:var(--space-1)}
+  .stack{display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-3)}
+  /* ---------- form primitives ---------- */
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field .req{color:var(--error)}
+  .field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=password]{
+    width:100%;min-height:48px;padding:12px 14px;
+    font:inherit;font-size:16px;color:var(--ink-900);
+    background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
+    transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);
+  }
+  .field input:focus-visible{outline:none;border-color:var(--ink-900);box-shadow:0 0 0 3px rgba(17,18,20,.12)}
+  .field input[aria-invalid="true"]{border-color:var(--error)}
+  .helper{font-size:13px;color:var(--ink-500);margin-top:6px}
+  .error-msg{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--error);margin-top:6px}
+  .error-msg svg{flex:none;width:15px;height:15px;margin-top:2px}
+  .ok-msg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--success);margin-top:6px}
+  .ok-msg svg{width:15px;height:15px}
+  .tel-wrap{display:flex}
+  .tel-wrap .cc{
+    flex:none;display:flex;align-items:center;gap:4px;padding:0 12px;min-height:48px;
+    border:1px solid var(--grey-200);border-right:0;border-radius:var(--radius) 0 0 var(--radius);
+    background:var(--grey-100);font-size:15px;color:var(--ink-700);cursor:pointer;font:inherit;
+  }
+  .tel-wrap input{border-radius:0 var(--radius) var(--radius) 0 !important}
+  .pw-wrap{position:relative}
+  .pw-wrap input{padding-right:48px !important}
+  .pw-toggle{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    width:40px;height:40px;display:grid;place-items:center;
+    background:transparent;border:0;border-radius:var(--radius);cursor:pointer;color:var(--ink-500);
+  }
+  .pw-toggle:hover{background:var(--grey-100)}
+  .pw-toggle:focus-visible{outline:2px solid var(--ink-900);outline-offset:1px}
+  .pw-toggle svg{width:18px;height:18px}
+  /* captcha placeholder */
+  .captcha{
+    display:flex;align-items:center;gap:12px;
+    border:1px solid var(--grey-200);border-radius:var(--radius);
+    background:var(--grey-100);padding:14px 16px;font-size:14px;color:var(--ink-700);
+  }
+  .captcha .box{width:22px;height:22px;border:2px solid var(--ink-400);border-radius:var(--radius);background:var(--white);flex:none}
+  .captcha small{margin-left:auto;font-size:10px;color:var(--ink-400);text-transform:uppercase;letter-spacing:.05em}
+  /* buttons */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;min-height:48px;padding:12px 20px;
+    font:inherit;font-size:15px;font-weight:600;
+    border-radius:var(--radius);border:1px solid transparent;cursor:pointer;
+    transition:background var(--dur) var(--ease),transform 120ms var(--ease),box-shadow var(--dur) var(--ease);
+  }
+  .btn:active{transform:scale(.98)}
+  .btn:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+  .btn-primary{background:var(--ink-900);color:var(--white)}
+  .btn-primary:hover{background:#26272B}
+  .btn-primary[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+  .btn-secondary{background:var(--white);color:var(--ink-900);border-color:var(--grey-200)}
+  .btn-secondary:hover{border-color:var(--ink-900)}
+  .btn-ghost{background:transparent;color:var(--ink-700);width:auto;min-height:44px}
+  .btn-ghost:hover{background:var(--grey-100)}
+  .btn .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:var(--white);border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .btn.loading .spinner{display:block}
+  .btn.loading .btn-label{opacity:.75}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .foot-link{text-align:center;margin-top:var(--space-3);font-size:14px;color:var(--ink-500)}
+  .foot-link a{color:var(--ink-900);font-weight:600;text-decoration:none;border-bottom:1px solid var(--grey-200)}
+  .foot-link a:hover{border-color:var(--ink-900)}
+  a:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px;border-radius:2px}
+  /* ---------- check-mail / success states ---------- */
+  .state-icon{
+    width:56px;height:56px;border-radius:50%;margin:0 auto var(--space-2);
+    display:grid;place-items:center;background:var(--grey-100);border:1px solid var(--grey-200);
+  }
+  .state-icon svg{width:26px;height:26px;stroke:var(--ink-900)}
+  .state-icon.success{background:#F0FDF4;border-color:#BBF7D0}
+  .state-icon.success svg{stroke:var(--success)}
+  .center{text-align:center}
+  .email-echo{font-weight:600;color:var(--ink-900)}
+  .resend-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:var(--space-3);font-size:14px;color:var(--ink-500);flex-wrap:wrap}
+  .countdown{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink-700)}
+  /* ---------- OTP ---------- */
+  .otp-row{display:flex;gap:10px;justify-content:center;margin-top:var(--space-3)}
+  .otp-row input{
+    width:52px;height:60px;text-align:center;
+    font:inherit;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;
+    border:1px solid var(--grey-200);border-radius:var(--radius);background:var(--white);
+    transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);
+  }
+  .otp-row input:focus-visible{outline:none;border-color:var(--ink-900);box-shadow:0 0 0 3px rgba(17,18,20,.12)}
+  .otp-row input.filled{border-color:var(--ink-700)}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--ink-400);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:var(--space-3)}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--grey-200)}
+  /* ---------- onboarding wizard ---------- */
+  .stepper{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:var(--space-3)}
+  .step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-400);font-weight:600}
+  .step .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--grey-200);font-size:12px;background:var(--white)}
+  .step.done .dot{background:var(--ink-900);border-color:var(--ink-900);color:var(--white)}
+  .step.current{color:var(--ink-900)}
+  .step.current .dot{border-color:var(--ink-900);color:var(--ink-900)}
+  .step-line{width:32px;height:1.5px;background:var(--grey-200)}
+  .biz-card{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
+    padding:var(--space-2);cursor:pointer;font:inherit;
+    transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);
+  }
+  .biz-card:hover{border-color:var(--ink-900);box-shadow:var(--shadow-z1)}
+  .biz-card:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+  .biz-avatar{
+    flex:none;width:42px;height:42px;border-radius:var(--radius);
+    background:var(--grey-100);border:1px solid var(--grey-200);
+    display:grid;place-items:center;font-weight:700;font-size:15px;color:var(--ink-700);
+  }
+  .biz-meta{min-width:0;flex:1}
+  .biz-name{font-weight:600;font-size:15px}
+  .biz-code{font-size:13px;color:var(--ink-500);font-variant-numeric:tabular-nums}
+  .biz-open{flex:none;display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--ink-900)}
+  .biz-open svg{width:15px;height:15px}
+  .biz-card.create{border-style:dashed;color:var(--ink-700)}
+  .biz-card.create .biz-avatar{background:var(--white)}
+  .biz-card.create:hover{border-style:solid}
+  .status-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:600;letter-spacing:.02em;
+    padding:3px 8px;border-radius:999px;
+  }
+  .status-chip.active{background:#F0FDF4;color:var(--success)}
+  .status-chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .code-preview{
+    margin-top:6px;font-size:13px;color:var(--ink-500);
+    font-variant-numeric:tabular-nums;
+  }
+  .code-preview b{color:var(--ink-700);font-weight:600}
+  .success-code{
+    margin:var(--space-3) auto 0;max-width:280px;
+    border:1px dashed var(--grey-200);border-radius:var(--radius);background:var(--grey-100);
+    padding:var(--space-2);text-align:center;
+  }
+  .success-code .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400)}
+  .success-code .val{font-size:22px;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums;margin-top:4px}
+  .copy-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:600;background:transparent;border:0;cursor:pointer;color:var(--ink-700);border-bottom:1px solid var(--grey-200);padding:2px 0}
+  .copy-btn:hover{border-color:var(--ink-900)}
+  .copy-btn svg{width:14px;height:14px}
+  /* wizard panels */
+  .panel{display:none}
+  .panel.active{display:block;animation:fadeUp var(--dur) var(--ease)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .back-row{margin-bottom:var(--space-2)}
+  .back-row button{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:14px;font-weight:600;color:var(--ink-700);background:transparent;border:0;cursor:pointer;min-height:44px;padding:0 8px 0 0}
+  .back-row button:hover{color:var(--ink-900)}
+  .back-row svg{width:16px;height:16px}
+  /* ---------- provisioning progress ---------- */
+  .prov-list{display:flex;flex-direction:column;gap:14px;margin:var(--space-3) auto 0;max-width:300px;text-align:left}
+  .prov-item{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-400);transition:color var(--dur) var(--ease)}
+  .prov-item .pi{
+    flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+    border:1.5px solid var(--grey-200);background:var(--white);
+  }
+  .prov-item .pi svg{width:13px;height:13px;stroke:var(--white);display:none}
+  .prov-item .pi .ring{width:14px;height:14px;border:2px solid var(--grey-200);border-top-color:var(--ink-900);border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .prov-item.doing{color:var(--ink-900);font-weight:600}
+  .prov-item.doing .pi .ring{display:block}
+  .prov-item.done{color:var(--ink-700)}
+  .prov-item.done .pi{background:var(--ink-900);border-color:var(--ink-900)}
+  .prov-item.done .pi svg{display:block}
+  .prov-note{margin-top:var(--space-3);font-size:13px;color:var(--ink-400)}
+  /* ---------- verify-link (auto) states ---------- */
+  .state-icon.error{background:#FEF2F2;border-color:#FECACA}
+  .state-icon.error svg{stroke:var(--error)}
+  .big-spinner{width:40px;height:40px;border:3px solid var(--grey-200);border-top-color:var(--ink-900);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto var(--space-2)}
+  /* proto-only state switcher (not part of the design) */
+  .proto-states{display:flex;justify-content:center;gap:6px;margin-top:var(--space-3);flex-wrap:wrap}
+  .proto-states span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);align-self:center;font-weight:600}
+  .proto-states button{
+    font:inherit;font-size:11px;font-weight:600;color:var(--ink-500);
+    background:var(--grey-100);border:1px solid var(--grey-200);border-radius:999px;
+    padding:4px 10px;cursor:pointer;
+  }
+  .proto-states button[aria-pressed="true"]{background:var(--ink-900);color:var(--white);border-color:var(--ink-900)}
+  /* skip to content + reduced motion */
+  .skip{position:absolute;left:-9999px;top:8px;background:var(--ink-900);color:var(--white);padding:10px 16px;border-radius:var(--radius);z-index:200}
+  .skip:focus{left:8px}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+    html{scroll-behavior:auto}
+  }
+  @media (max-width:420px){
+    .otp-row{gap:6px}
+    .otp-row input{width:44px;height:54px;font-size:20px}
+    .card{padding:var(--space-3)}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<main id="main">
+
+<!-- ============ 1. /register ============ -->
+<section class="screen active" id="scr-register" aria-label="Register">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com</span>
+    <div class="card">
+      <h1>Create your account</h1>
+      <p class="sub">Start free. Set up your business in minutes.</p>
+      <form class="stack" onsubmit="return protoSubmit(this,'scr-checkmail')" novalidate>
+        <div class="field">
+          <label for="reg-name">Full name <span class="req" aria-hidden="true">*</span></label>
+          <input id="reg-name" type="text" autocomplete="name" required placeholder="e.g. Priya Sharma">
+        </div>
+        <div class="field">
+          <label for="reg-email">Email <span class="req" aria-hidden="true">*</span></label>
+          <input id="reg-email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.com" aria-describedby="reg-email-help">
+          <p class="helper" id="reg-email-help">We’ll send a verification link and code here.</p>
+        </div>
+        <div class="field">
+          <label for="reg-phone">Mobile <span class="req" aria-hidden="true">*</span></label>
+          <div class="tel-wrap">
+            <button type="button" class="cc" aria-label="Country code, India selected">🇮🇳 +91</button>
+            <input id="reg-phone" type="tel" autocomplete="tel-national" inputmode="tel" required placeholder="98765 43210">
+          </div>
+        </div>
+        <div class="captcha" role="group" aria-label="Human verification">
+          <span class="box" aria-hidden="true"></span>
+          <span>Verify you are human</span>
+          <small>Turnstile</small>
+        </div>
+        <button class="btn btn-primary" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Create account</span>
+        </button>
+      </form>
+      <p class="helper center" style="margin-top:16px">
+        By continuing you agree to the Terms of Service and Privacy Policy.
+      </p>
+    </div>
+    <p class="foot-link">Already have an account? <a href="#" onclick="showScreen('scr-login');return false">Sign in</a></p>
+  </div>
+</section>
+
+<!-- ============ 2. /check-mail ============ -->
+<section class="screen" id="scr-checkmail" aria-label="Check your email">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com</span>
+    <div class="card center">
+      <div class="state-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
+      <h1>Check your email</h1>
+      <p class="sub">We sent a verification link and a 6-digit code to<br><span class="email-echo">priya@company.com</span></p>
+      <div class="stack">
+        <button class="btn btn-primary" onclick="showScreen('scr-verify')">
+          <span class="btn-label">Enter code instead</span>
+        </button>
+      </div>
+      <div class="resend-row" aria-live="polite">
+        <span>Didn’t get it?</span>
+        <button class="btn btn-ghost" id="resend-btn" onclick="startCountdown(this)" disabled>
+          Resend in <span class="countdown" id="cd">60s</span>
+        </button>
+      </div>
+      <p class="helper" style="margin-top:8px">Check your spam folder — the email comes from no-reply@komkits.com</p>
+    </div>
+    <p class="foot-link"><a href="#" onclick="showScreen('scr-register');return false">Use a different email</a></p>
+  </div>
+</section>
+
+<!-- ============ 3. /verify-code ============ -->
+<section class="screen" id="scr-verify" aria-label="Verify email">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com</span>
+    <div class="card center">
+      <h1>Enter verification code</h1>
+      <p class="sub">Type the 6-digit code sent to <span class="email-echo">priya@company.com</span></p>
+      <div class="otp-row" id="otp" role="group" aria-label="6-digit verification code">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 2">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 3">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 4">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 5">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 6">
+      </div>
+      <p class="error-msg" id="otp-error" hidden style="justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        That code didn’t match. Check the digits and try again — 3 attempts left.
+      </p>
+      <div class="stack">
+        <button class="btn btn-primary" id="verify-btn" disabled onclick="protoVerify(this)">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Verify email</span>
+        </button>
+      </div>
+      <div class="divider" aria-hidden="true">or</div>
+      <p class="helper" style="margin-top:16px">Click the <b>Verify email</b> button in the message we sent — it works the same way.</p>
+      <p class="helper" style="margin-top:8px">Code expires in <span class="countdown">29:41</span></p>
+    </div>
+    <p class="foot-link"><a href="#" onclick="showScreen('scr-checkmail');return false">Back</a></p>
+  </div>
+</section>
+
+<!-- ============ 4. /onboarding ============ -->
+<section class="screen" id="scr-onboarding" aria-label="Set up your business">
+  <div class="shell wide">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com · signed in as priya@company.com</span>
+
+    <div class="stepper" aria-label="Progress: step 2 of 3">
+      <span class="step done"><span class="dot" aria-hidden="true">✓</span> Verify</span>
+      <span class="step-line" aria-hidden="true"></span>
+      <span class="step current"><span class="dot" aria-hidden="true">2</span> Business</span>
+      <span class="step-line" aria-hidden="true"></span>
+      <span class="step"><span class="dot" aria-hidden="true">3</span> Sign in</span>
+    </div>
+
+    <!-- Panel A: choose existing / create -->
+    <div class="card panel active" id="pn-choose">
+      <h1>Your businesses</h1>
+      <p class="sub">Open an existing workspace, or set up a new one.</p>
+      <div class="stack" role="list">
+        <button class="biz-card" role="listitem" onclick="showScreen('scr-login')">
+          <span class="biz-avatar" aria-hidden="true">SK</span>
+          <span class="biz-meta">
+            <span class="biz-name">Sharma Kirana Stores</span><br>
+            <span class="biz-code">sharma-kirana · <span class="status-chip active"><span class="d" aria-hidden="true"></span>Active</span></span>
+          </span>
+          <span class="biz-open">Open
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </button>
+        <button class="biz-card" role="listitem" onclick="showScreen('scr-login')">
+          <span class="biz-avatar" aria-hidden="true">PT</span>
+          <span class="biz-meta">
+            <span class="biz-name">Priya Textiles</span><br>
+            <span class="biz-code">priya-textiles · <span class="status-chip active"><span class="d" aria-hidden="true"></span>Active</span></span>
+          </span>
+          <span class="biz-open">Open
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </button>
+        <button class="biz-card create" onclick="showPanel('pn-create')">
+          <span class="biz-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <span class="biz-meta">
+            <span class="biz-name">Create a new business</span><br>
+            <span class="biz-code">A fresh workspace with its own data</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel A2: first business — empty state (new user, GET /client-users returns none) -->
+    <div class="card panel center" id="pn-empty" style="max-width:440px;margin:0 auto">
+      <div class="state-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+      </div>
+      <h1>Welcome, Priya</h1>
+      <p class="sub">Your email is verified. One step left — set up your first business workspace.</p>
+      <div class="stack">
+        <button class="btn btn-primary" onclick="showPanel('pn-create')">
+          <span class="btn-label">Set up my business</span>
+        </button>
+      </div>
+      <p class="helper" style="margin-top:16px">Takes about a minute. You’ll choose a business code you’ll use to sign in.</p>
+    </div>
+
+    <!-- Panel B: create form -->
+    <div class="card panel" id="pn-create" style="max-width:440px;margin:0 auto">
+      <div class="back-row">
+        <button type="button" onclick="showPanel('pn-choose')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          All businesses
+        </button>
+      </div>
+      <h1>Set up your business</h1>
+      <p class="sub">This creates your workspace — you’ll sign in with the business code.</p>
+      <form class="stack" onsubmit="return protoSubmit(this,null,startProvisioning)" novalidate>
+        <div class="field">
+          <label for="biz-name">Business name <span class="req" aria-hidden="true">*</span></label>
+          <input id="biz-name" type="text" autocomplete="organization" required placeholder="e.g. Priya Textiles" oninput="suggestCode(this.value)">
+        </div>
+        <div class="field">
+          <label for="biz-code">Business code <span class="req" aria-hidden="true">*</span></label>
+          <input id="biz-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="priya-textiles"
+                 aria-describedby="biz-code-help biz-code-status" oninput="checkCode(this)">
+          <p class="helper" id="biz-code-help">Lowercase letters, numbers and hyphens. 3–30 characters. This can’t be changed later.</p>
+          <p class="ok-msg" id="biz-code-ok" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span><b id="code-echo">priya-textiles</b> is available</span>
+          </p>
+          <p class="error-msg" id="biz-code-taken" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            That code is taken. Try <button type="button" class="copy-btn" onclick="useSuggestion()">priya-textiles-2</button>
+          </p>
+          <p class="code-preview" id="biz-code-status" aria-live="polite">Your sign-in: <b>app.komkits.com</b> · code <b id="code-preview-val">—</b></p>
+        </div>
+        <div class="field">
+          <label for="biz-pass">Password <span class="req" aria-hidden="true">*</span></label>
+          <div class="pw-wrap">
+            <input id="biz-pass" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" aria-describedby="biz-pass-help">
+            <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePw(this,'biz-pass')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="helper" id="biz-pass-help">You’ll use this to sign in as the owner of this business.</p>
+        </div>
+        <button class="btn btn-primary" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Create business</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Panel B2: provisioning (POST /business/register clones blueprint DB — takes seconds, never leave the user on a frozen button) -->
+    <div class="card panel center" id="pn-provisioning" style="max-width:440px;margin:0 auto" aria-live="polite">
+      <div class="big-spinner" aria-hidden="true"></div>
+      <h1>Setting up Priya Textiles</h1>
+      <p class="sub">This usually takes under a minute. Don’t close this tab.</p>
+      <div class="prov-list">
+        <div class="prov-item" id="pv-1">
+          <span class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="ring"></span></span>
+          Creating your workspace
+        </div>
+        <div class="prov-item" id="pv-2">
+          <span class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="ring"></span></span>
+          Preparing accounts &amp; inventory
+        </div>
+        <div class="prov-item" id="pv-3">
+          <span class="pi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="ring"></span></span>
+          Securing your owner account
+        </div>
+      </div>
+      <p class="prov-note">Your data lives in its own database — nothing is shared with other businesses.</p>
+    </div>
+
+    <!-- Panel C: success -->
+    <div class="card panel center" id="pn-done" style="max-width:440px;margin:0 auto">
+      <div class="state-icon success" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h1>Priya Textiles is ready</h1>
+      <p class="sub">Save your business code — you’ll need it every time you sign in.</p>
+      <div class="success-code">
+        <span class="lbl">Business code</span>
+        <div class="val">priya-textiles</div>
+        <button type="button" class="copy-btn" onclick="this.querySelector('span').textContent='Copied ✓';setTimeout(()=>this.querySelector('span').textContent='Copy code',2000)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy code</span>
+        </button>
+      </div>
+      <p class="helper" style="margin-top:16px">We also emailed this to priya@company.com.</p>
+      <div class="stack">
+        <button class="btn btn-primary" onclick="showScreen('scr-login')">
+          <span class="btn-label">Continue to sign in</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- prototype-only: jump between wizard states -->
+    <div class="proto-states" aria-label="Prototype states (not part of the design)">
+      <span>States</span>
+      <button aria-pressed="true" onclick="protoWizardState(this,'pn-choose')">Existing user</button>
+      <button aria-pressed="false" onclick="protoWizardState(this,'pn-empty')">First business</button>
+      <button aria-pressed="false" onclick="protoWizardState(this,'pn-create')">Create form</button>
+      <button aria-pressed="false" onclick="protoWizardState(this,'pn-provisioning')">Provisioning</button>
+      <button aria-pressed="false" onclick="protoWizardState(this,'pn-done')">Success</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. /login ============ -->
+<section class="screen" id="scr-login" aria-label="Sign in">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">app.komkits.com</span>
+    <div class="card">
+      <h1>Sign in</h1>
+      <p class="sub">Welcome back. Enter your workspace details.</p>
+      <form class="stack" onsubmit="return protoSubmit(this,'scr-register')" novalidate>
+        <div class="field">
+          <label for="li-code">Business code <span class="req" aria-hidden="true">*</span></label>
+          <input id="li-code" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required value="priya-textiles" aria-describedby="li-code-help">
+          <p class="helper" id="li-code-help" style="display:flex;justify-content:space-between;gap:8px">
+            <span>Your workspace’s unique code</span>
+            <a href="#" onclick="showScreen('scr-forgot');return false" style="color:var(--ink-900);font-weight:600;text-decoration:none;border-bottom:1px solid var(--grey-200);white-space:nowrap">Forgot code?</a>
+          </p>
+        </div>
+        <div class="field">
+          <label for="li-email">Email <span class="req" aria-hidden="true">*</span></label>
+          <input id="li-email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.com">
+        </div>
+        <div class="field">
+          <label for="li-pass">Password <span class="req" aria-hidden="true">*</span></label>
+          <div class="pw-wrap">
+            <input id="li-pass" type="password" autocomplete="current-password" required placeholder="Your password">
+            <button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false" onclick="togglePw(this,'li-pass')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="helper" style="text-align:right"><a href="#" style="color:var(--ink-900);font-weight:600;text-decoration:none;border-bottom:1px solid var(--grey-200)">Forgot password?</a></p>
+        </div>
+        <button class="btn btn-primary" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Sign in</span>
+        </button>
+      </form>
+    </div>
+    <p class="foot-link">New to KomKits? <a href="#" onclick="showScreen('scr-register');return false">Create an account</a></p>
+  </div>
+</section>
+
+<!-- ============ 6. /forgot-business-code ============ -->
+<section class="screen" id="scr-forgot" aria-label="Forgot business code">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com</span>
+
+    <div class="card panel active" id="pn-forgot-form">
+      <h1>Forgot your business code?</h1>
+      <p class="sub">Enter your email and we’ll send you the list of business codes linked to it.</p>
+      <form class="stack" onsubmit="return protoSubmit(this,null,()=>{document.getElementById('pn-forgot-form').classList.remove('active');document.getElementById('pn-forgot-done').classList.add('active')})" novalidate>
+        <div class="field">
+          <label for="fc-email">Email <span class="req" aria-hidden="true">*</span></label>
+          <input id="fc-email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.com">
+        </div>
+        <div class="captcha" role="group" aria-label="Human verification">
+          <span class="box" aria-hidden="true"></span>
+          <span>Verify you are human</span>
+          <small>Turnstile</small>
+        </div>
+        <button class="btn btn-primary" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Email my business codes</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- generic success — same message whether or not the email exists (anti-enumeration, spec §7.8) -->
+    <div class="card panel center" id="pn-forgot-done">
+      <div class="state-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
+      <h1>Check your email</h1>
+      <p class="sub">If any businesses are linked to <span class="email-echo">priya@company.com</span>, we’ve sent the codes there.</p>
+      <div class="stack">
+        <button class="btn btn-secondary" onclick="showScreen('scr-login')">
+          <span class="btn-label">Back to sign in</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="foot-link"><a href="#" onclick="showScreen('scr-login');return false">Back to sign in</a></p>
+  </div>
+</section>
+
+<!-- ============ 7. /verify?token= (email link click — auto-verifies, no typing) ============ -->
+<section class="screen" id="scr-verifylink" aria-label="Verifying your email">
+  <div class="shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M5 4v16M5 12l8-8M5 12l8 8M15 4h4M15 20h4"/></svg>
+      </span>
+      <span class="brand-name">KomKits</span>
+    </div>
+    <span class="zone-tag">komkits.com/verify</span>
+
+    <!-- State 1: verifying (page load — token from the URL is being checked) -->
+    <div class="card panel center active" id="vl-wait" aria-live="polite">
+      <div class="big-spinner" aria-hidden="true"></div>
+      <h1>Verifying your email…</h1>
+      <p class="sub">Hold on a second — confirming the link for <span class="email-echo">priya@company.com</span>.</p>
+    </div>
+
+    <!-- State 2: success → onboarding (auto-redirect with manual fallback) -->
+    <div class="card panel center" id="vl-ok" aria-live="polite">
+      <div class="state-icon success" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h1>Email verified</h1>
+      <p class="sub">Taking you to business setup…</p>
+      <div class="stack">
+        <button class="btn btn-primary" onclick="showScreen('scr-onboarding')">
+          <span class="btn-label">Continue</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- State 3: expired / invalid / already-used token — recover with a resend, never a dead end -->
+    <div class="card panel center" id="vl-expired">
+      <div class="state-icon error" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      </div>
+      <h1>This link has expired</h1>
+      <p class="sub">Verification links work for 30 minutes. No problem — we can send a fresh one to <span class="email-echo">priya@company.com</span>.</p>
+      <div class="stack">
+        <button class="btn btn-primary" onclick="protoSubmit(this.closest('.stack'),'scr-checkmail')">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Send a new link</span>
+        </button>
+      </div>
+      <p class="helper" style="margin-top:16px">Already verified? <a href="#" onclick="showScreen('scr-login');return false" style="color:var(--ink-900);font-weight:600;text-decoration:none;border-bottom:1px solid var(--grey-200)">Sign in instead</a></p>
+    </div>
+
+    <!-- prototype-only: jump between link states -->
+    <div class="proto-states" aria-label="Prototype states (not part of the design)">
+      <span>States</span>
+      <button aria-pressed="true" onclick="protoLinkState(this,'play')">Verifying → success</button>
+      <button aria-pressed="false" onclick="protoLinkState(this,'vl-expired')">Expired link</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- prototype-only navigation -->
+<nav class="proto-nav" aria-label="Mockup screens (prototype only)">
+  <span>Mockups</span>
+  <button aria-current="true" onclick="showScreen('scr-register',this)">1 · Register</button>
+  <button onclick="showScreen('scr-checkmail',this)">2 · Check mail</button>
+  <button onclick="showScreen('scr-verify',this)">3 · Verify code</button>
+  <button onclick="showScreen('scr-onboarding',this)">4 · Onboarding</button>
+  <button onclick="showScreen('scr-login',this)">5 · Login</button>
+  <button onclick="showScreen('scr-forgot',this)">6 · Forgot code</button>
+  <button onclick="showScreen('scr-verifylink',this)">7 · Verify link</button>
+</nav>
+
+<script>
+/* ---------- prototype plumbing (simulated; production uses TanStack Query + Formik/Yup) ---------- */
+const navBtns = document.querySelectorAll('.proto-nav button');
+function showScreen(id, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+  navBtns.forEach((b,i)=>{
+    const map=['scr-register','scr-checkmail','scr-verify','scr-onboarding','scr-login','scr-forgot','scr-verifylink'];
+    b.setAttribute('aria-current', map[i]===id ? 'true':'false');
+  });
+  window.scrollTo({top:0,behavior:'instant'});
+  // reset wizard sub-panels when re-entering
+  if(id==='scr-onboarding') showPanel('pn-choose');
+  if(id==='scr-forgot'){document.getElementById('pn-forgot-form').classList.add('active');document.getElementById('pn-forgot-done').classList.remove('active');}
+  if(id==='scr-checkmail') armCountdown();
+  if(id==='scr-verifylink') playVerifyLink();
+}
+function showPanel(id){
+  document.querySelectorAll('#scr-onboarding .panel').forEach(p=>p.classList.toggle('active', p.id===id));
+  // keep the proto state chips in sync
+  document.querySelectorAll('#scr-onboarding .proto-states button').forEach(b=>{
+    b.setAttribute('aria-pressed', b.getAttribute('onclick').includes("'"+id+"'") ? 'true':'false');
+  });
+  if(id==='pn-provisioning') runProvisioning(); else stopProvisioning();
+}
+function protoWizardState(btn,id){ showPanel(id); }
+/* provisioning sequence: steps tick over ~3s, then success */
+let provTimers=[];
+function stopProvisioning(){ provTimers.forEach(clearTimeout); provTimers=[]; }
+function runProvisioning(){
+  stopProvisioning();
+  const steps=['pv-1','pv-2','pv-3'].map(i=>document.getElementById(i));
+  steps.forEach(s=>s.classList.remove('doing','done'));
+  steps[0].classList.add('doing');
+  provTimers.push(setTimeout(()=>{steps[0].classList.replace('doing','done');steps[1].classList.add('doing');},1100));
+  provTimers.push(setTimeout(()=>{steps[1].classList.replace('doing','done');steps[2].classList.add('doing');},2100));
+  provTimers.push(setTimeout(()=>{steps[2].classList.replace('doing','done');},2900));
+  provTimers.push(setTimeout(()=>{showPanel('pn-done');},3400));
+}
+function startProvisioning(){ showPanel('pn-provisioning'); }
+/* /verify?token= link path: verifying → success (or expired via proto chip) */
+let vlTimer=null;
+function showLinkPanel(id){
+  document.querySelectorAll('#scr-verifylink .panel').forEach(p=>p.classList.toggle('active', p.id===id));
+}
+function playVerifyLink(){
+  clearTimeout(vlTimer);
+  showLinkPanel('vl-wait');
+  vlTimer=setTimeout(()=>showLinkPanel('vl-ok'),1400);
+  document.querySelectorAll('#scr-verifylink .proto-states button').forEach((b,i)=>b.setAttribute('aria-pressed', i===0?'true':'false'));
+}
+function protoLinkState(btn,state){
+  clearTimeout(vlTimer);
+  document.querySelectorAll('#scr-verifylink .proto-states button').forEach(b=>b.setAttribute('aria-pressed', b===btn?'true':'false'));
+  if(state==='play'){ playVerifyLink(); return; }
+  showLinkPanel(state);
+}
+/* submit with loading state, then advance */
+function protoSubmit(form, nextScreen, cb){
+  const btn = form.querySelector('.btn-primary');
+  btn.classList.add('loading'); btn.disabled = true;
+  setTimeout(()=>{
+    btn.classList.remove('loading'); btn.disabled = false;
+    if(nextScreen) showScreen(nextScreen);
+    if(cb) cb();
+  }, 900);
+  return false;
+}
+/* resend countdown (60s throttle, spec) */
+let cdTimer=null;
+function armCountdown(){
+  const btn=document.getElementById('resend-btn'), cd=document.getElementById('cd');
+  clearInterval(cdTimer); let t=60; btn.disabled=true;
+  btn.childNodes[0].textContent='Resend in ';
+  cd.textContent=t+'s'; cd.hidden=false;
+  cdTimer=setInterval(()=>{
+    t--; cd.textContent=t+'s';
+    if(t<=0){clearInterval(cdTimer);btn.disabled=false;btn.childNodes[0].textContent='Resend email';cd.hidden=true;}
+  },1000);
+}
+function startCountdown(btn){ armCountdown(); }
+/* OTP behavior: auto-advance, backspace, paste */
+const otp = document.querySelectorAll('#otp input');
+otp.forEach((inp,i)=>{
+  inp.addEventListener('input',()=>{
+    inp.value = inp.value.replace(/\D/g,'').slice(0,1);
+    inp.classList.toggle('filled', !!inp.value);
+    if(inp.value && i<5) otp[i+1].focus();
+    syncVerifyBtn();
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Backspace' && !inp.value && i>0) otp[i-1].focus();
+  });
+  inp.addEventListener('paste',e=>{
+    e.preventDefault();
+    const digits=(e.clipboardData.getData('text').match(/\d/g)||[]).slice(0,6);
+    digits.forEach((d,j)=>{otp[j].value=d;otp[j].classList.add('filled');});
+    otp[Math.min(digits.length,5)].focus(); syncVerifyBtn();
+  });
+});
+function syncVerifyBtn(){
+  document.getElementById('verify-btn').disabled = [...otp].some(x=>!x.value);
+}
+function protoVerify(btn){
+  btn.classList.add('loading'); btn.disabled=true;
+  setTimeout(()=>{btn.classList.remove('loading');btn.disabled=false;showScreen('scr-onboarding');},900);
+}
+/* business-code: suggest from name, debounced availability check (simulated) */
+let codeDebounce=null;
+function slugify(v){return v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30);}
+function suggestCode(name){
+  const codeInp=document.getElementById('biz-code');
+  if(!codeInp.dataset.touched){ codeInp.value=slugify(name); checkCode(codeInp); }
+}
+function checkCode(inp){
+  inp.dataset.touched='1';
+  const ok=document.getElementById('biz-code-ok'), taken=document.getElementById('biz-code-taken');
+  const preview=document.getElementById('code-preview-val'), echo=document.getElementById('code-echo');
+  ok.hidden=true; taken.hidden=true;
+  inp.value=inp.value.toLowerCase().replace(/[^a-z0-9-]/g,'');
+  preview.textContent=inp.value||'—';
+  clearTimeout(codeDebounce);
+  if(inp.value.length<3) return;
+  codeDebounce=setTimeout(()=>{
+    // simulated: 'sharma-kirana' is taken, everything else available
+    if(inp.value==='sharma-kirana'){ taken.hidden=false; inp.setAttribute('aria-invalid','true'); }
+    else { echo.textContent=inp.value; ok.hidden=false; inp.removeAttribute('aria-invalid'); }
+  },400);
+}
+function useSuggestion(){
+  const inp=document.getElementById('biz-code');
+  inp.value='priya-textiles-2'; checkCode(inp); inp.focus();
+}
+/* password visibility toggle */
+function togglePw(btn,id){
+  const inp=document.getElementById(id);
+  const show = inp.type==='password';
+  inp.type = show?'text':'password';
+  btn.setAttribute('aria-pressed', show);
+  btn.setAttribute('aria-label', show?'Hide password':'Show password');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KomKits — Dashboard Editor Card (standalone)</title>
+<!--
+  Standalone prototype: the REAL dashboard section editor, miniaturized as a
+  landing-page demo card.
+  Pattern source (researched in apps/frontend):
+  · src/views/dashboards/SectionPage.tsx — react-grid-layout v2, 12-col grid,
+    ROW_HEIGHT 80px, margin 16, spans persist (pos_x/pos_y/span_w/span_h),
+    edit mode: EditOutlined → CheckOutlined, drag via HolderOutlined handle.
+  · src/views/dashboards/SectionLibraryShelf.tsx — saved-chart thumbnails
+    (64×40) assigned onto the section.
+  · types/dashboard.ts ChartType: bar line pie area scatter heatmap table scorecard.
+  Scaled here to a 6-col grid so it reads at card size.
+
+  dataviz notes: every chart is SINGLE-series (no legends; the tile title names
+  the series). Marks: grey #3F3F46 bars / teal #008694 line — both ≥3:1 on the
+  surface (validated); text wears ink tokens, never the mark color; the delta
+  chip is a status color doing its reserved job.
+
+  Interactions: Edit → drag tiles by the handle to reorder · resize from the
+  corner · drag charts in from the library shelf · × returns a tile to the
+  shelf · Done saves (toast). Touch works (pointer events). Prototype only.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#111214; --ink-700:#3F3F46; --ink-500:#6B7280; --ink-400:#9CA3AF;
+    --grey-50:#FAFAFA; --grey-100:#F4F4F5; --grey-200:#E4E4E7; --white:#FFFFFF;
+    /* semantic — product palette (apps/frontend themes/theme/komkits.ts) */
+    --success:#00A04D; --success-bg:#E0F5EA; --success-bd:#A9E3C3;
+    --info:#008694;    --info-bg:#E0F4F5;    --info-bd:#A5DEE2;
+    --warning:#AD6800; --warning-bg:#FFF7E0; --warning-bd:#FFE58F;
+    --chart-bar:#3F3F46; --chart-line:#008694;
+    --radius:4px;
+    --shadow-z1:0 1px 2px rgba(17,18,20,.06),0 1px 3px rgba(17,18,20,.08);
+    --shadow-z2:0 8px 24px rgba(17,18,20,.10);
+    --dur:200ms; --ease:cubic-bezier(.2,.8,.4,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none !important}
+  body{font-family:'Public Sans',system-ui,sans-serif;background:var(--grey-50);color:var(--ink-900);
+    font-size:16px;line-height:1.5;min-height:100dvh;display:grid;place-items:center;padding:32px 16px}
+  .demo-note{position:fixed;top:16px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--ink-400);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+  button{font:inherit}
+  button:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+
+  /* ---------- card shell ---------- */
+  .dash-card{width:920px;max-width:100%;border:1px solid var(--grey-200);border-radius:8px;background:var(--white);box-shadow:var(--shadow-z2);overflow:hidden}
+  .dash-meta{padding:18px 22px 20px;border-top:1px solid var(--grey-200)}
+  .dash-meta h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+  .dash-meta p{font-size:13.5px;color:var(--ink-500);margin-top:6px}
+
+  /* ---------- section header (mirrors SectionPage) ---------- */
+  .dash-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--grey-200);background:var(--grey-50)}
+  .dash-head h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .asof{font-size:11.5px;color:var(--ink-400);font-variant-numeric:tabular-nums}
+  .range{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-700);
+    border:1px solid var(--grey-200);background:var(--white);border-radius:var(--radius);padding:6px 12px;cursor:default}
+  .icon-btn{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--grey-200);background:var(--white);border-radius:var(--radius);cursor:pointer;color:var(--ink-500);transition:border-color .2s var(--ease)}
+  .icon-btn:hover{border-color:var(--ink-900);color:var(--ink-900)}
+  .icon-btn svg{width:15px;height:15px}
+  .edit-btn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;min-height:32px;padding:0 14px;
+    border-radius:var(--radius);border:1px solid var(--grey-200);background:var(--white);cursor:pointer;transition:all .2s var(--ease)}
+  .edit-btn:hover{border-color:var(--ink-900)}
+  .edit-btn svg{width:14px;height:14px}
+  .editing .edit-btn{background:var(--ink-900);color:var(--white);border-color:var(--ink-900)}
+
+  /* ---------- the grid (6-col mini version of the 12-col RGL) ---------- */
+  .dash-stage{position:relative;padding:16px 18px 18px;background:var(--white)}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:58px;gap:12px;position:relative}
+  .editing .grid{background:
+    repeating-linear-gradient(90deg,transparent 0,transparent calc((100% - 60px)/6),rgba(17,18,20,.04) calc((100% - 60px)/6),rgba(17,18,20,.04) calc((100% - 60px)/6 + 12px));
+    border-radius:var(--radius)}
+  .tile{position:relative;grid-column:span var(--w);grid-row:span var(--h);
+    background:var(--white);border:1px solid var(--grey-200);border-radius:6px;box-shadow:var(--shadow-z1);
+    display:flex;flex-direction:column;min-width:0;overflow:hidden;transition:box-shadow .2s var(--ease),border-color .2s var(--ease)}
+  .editing .tile{border-style:dashed;border-color:var(--ink-400)}
+  .tile.dragging{opacity:.35}
+  .t-head{display:flex;align-items:center;gap:7px;padding:9px 10px 7px;min-height:32px}
+  .t-head b{font-size:12px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .t-handle{display:none;place-items:center;width:22px;height:22px;border:0;background:transparent;border-radius:var(--radius);
+    color:var(--ink-400);cursor:grab;touch-action:none;flex:none;padding:0}
+  .t-handle:hover{background:var(--grey-100);color:var(--ink-900)}
+  .t-handle:active{cursor:grabbing}
+  .t-handle svg{width:13px;height:13px}
+  .t-x{display:none;place-items:center;width:22px;height:22px;margin-left:auto;border:0;background:transparent;border-radius:var(--radius);
+    color:var(--ink-400);cursor:pointer;flex:none;font-size:14px;line-height:1;padding:0}
+  .t-x:hover{background:var(--grey-100);color:var(--ink-900)}
+  .editing .t-handle,.editing .t-x{display:grid}
+  .t-rs{display:none;position:absolute;right:2px;bottom:2px;width:16px;height:16px;cursor:nwse-resize;touch-action:none;
+    border-right:2px solid var(--ink-400);border-bottom:2px solid var(--ink-400);border-radius:0 0 4px 0}
+  .editing .t-rs{display:block}
+  .t-body{flex:1;min-height:0;padding:2px 12px 12px;display:flex;flex-direction:column}
+
+  /* ---------- charts (single-series; title names the series — no legends) ---------- */
+  .c-bars{flex:1;display:flex;align-items:flex-end;gap:6px;min-height:0}
+  .c-bars i{flex:1;height:var(--v);background:var(--chart-bar);border-radius:3px 3px 0 0;min-height:3px;cursor:default}
+  .c-bars i:hover{background:var(--ink-900)}
+  .c-line{flex:1;position:relative;min-height:0}
+  .c-line svg{position:absolute;inset:0;width:100%;height:100%}
+  .c-line .cols{position:absolute;inset:0;display:flex}
+  .c-line .cols span{flex:1;cursor:default}
+  .c-line .cols span:hover{background:rgba(0,134,148,.06)}
+  .c-score{flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:0}
+  .c-score .v{font-size:clamp(17px,2.4vw,22px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .c-score .l{font-size:11.5px;color:var(--ink-500)}
+  .delta{display:inline-flex;align-items:center;gap:4px;width:max-content;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;
+    background:var(--success-bg);border:1px solid var(--success-bd);color:var(--success)}
+  .c-table{flex:1;display:flex;flex-direction:column;justify-content:center;gap:0;font-size:11.5px}
+  .c-table .r{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--grey-200)}
+  .c-table .r:last-child{border-bottom:0}
+  .c-table .r b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .c-table .r span{font-variant-numeric:tabular-nums;color:var(--ink-700);white-space:nowrap}
+  .c-donut{flex:1;display:flex;align-items:center;gap:14px;min-height:0}
+  .c-donut svg{height:86%;max-height:96px;flex:none}
+  .c-donut .dl{display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--ink-700)}
+  .c-donut .dl span{display:flex;align-items:center;gap:6px}
+  .c-donut .dl i{width:8px;height:8px;border-radius:2px;flex:none}
+
+  /* ---------- library shelf (mirrors SectionLibraryShelf) ---------- */
+  .shelf{display:none;margin-top:14px;border:1px dashed var(--ink-400);border-radius:6px;background:var(--grey-50);padding:10px 12px}
+  .editing .shelf{display:block}
+  .shelf-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-400);margin-bottom:8px}
+  .shelf-items{display:flex;gap:10px;flex-wrap:wrap}
+  .shelf-item{display:flex;align-items:center;gap:9px;background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
+    padding:7px 10px;cursor:grab;touch-action:none;box-shadow:var(--shadow-z1);transition:border-color .2s var(--ease)}
+  .shelf-item:hover{border-color:var(--ink-900)}
+  .shelf-item:active{cursor:grabbing}
+  .shelf-thumb{width:56px;height:36px;border:1px solid var(--grey-200);border-radius:3px;background:var(--white);overflow:hidden;
+    display:flex;align-items:flex-end;gap:2px;padding:4px;flex:none}
+  .shelf-thumb i{flex:1;background:var(--chart-bar);border-radius:1px 1px 0 0}
+  .shelf-thumb svg{width:100%;height:100%}
+  .shelf-item b{font-size:11.5px;font-weight:600}
+  .shelf-item small{display:block;font-size:10px;color:var(--ink-400)}
+  .shelf-empty{font-size:11.5px;color:var(--ink-400)}
+
+  /* ---------- drag ghost / tooltip / toast ---------- */
+  .ghost{position:fixed;z-index:50;pointer-events:none;background:var(--ink-900);color:var(--white);
+    font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:999px;box-shadow:var(--shadow-z2);transform:translate(-50%,-130%)}
+  .tip{position:fixed;z-index:60;pointer-events:none;background:var(--ink-900);color:var(--white);font-size:11px;font-weight:600;
+    padding:5px 9px;border-radius:var(--radius);transform:translate(-50%,-130%);white-space:nowrap;opacity:0;transition:opacity .12s var(--ease)}
+  .tip.on{opacity:1}
+  .tip small{display:block;font-weight:400;color:rgba(255,255,255,.65);font-size:10px}
+  .toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,8px);z-index:40;
+    background:var(--ink-900);color:var(--white);font-size:12px;font-weight:600;padding:8px 16px;border-radius:999px;
+    display:flex;align-items:center;gap:7px;opacity:0;pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease)}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .toast svg{width:13px;height:13px;stroke:var(--success)}
+
+  @media (max-width:720px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .tile{grid-column:span 2 !important}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<p class="demo-note">Prototype — dashboard editor card</p>
+
+<div class="dash-card" id="card">
+  <div class="dash-head">
+    <h2>Sales overview</h2>
+    <span class="asof">as of 10:22</span>
+    <span class="range">This month
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </span>
+    <button class="icon-btn" type="button" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+    </button>
+    <button class="edit-btn" id="edit-btn" type="button" aria-pressed="false">
+      <svg id="edit-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+      <span id="edit-label">Edit layout</span>
+    </button>
+  </div>
+
+  <div class="dash-stage" id="stage">
+    <div class="grid" id="grid">
+
+      <div class="tile" style="--w:2;--h:2" data-title="Receivables">
+        <div class="t-head">
+          <button class="t-handle" type="button" aria-label="Drag to move" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></button>
+          <b>Receivables</b>
+          <button class="t-x" type="button" aria-label="Remove chart">×</button>
+        </div>
+        <div class="t-body">
+          <div class="c-score">
+            <span class="v">₹47,250</span>
+            <span class="l">outstanding across 3 customers</span>
+            <span class="delta"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14l-5 5-5-5M12 19V5"/></svg>12% vs last month</span>
+          </div>
+        </div>
+        <span class="t-rs" aria-hidden="true"></span>
+      </div>
+
+      <div class="tile" style="--w:4;--h:2" data-title="Sales by month">
+        <div class="t-head">
+          <button class="t-handle" type="button" aria-label="Drag to move" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></button>
+          <b>Sales by month</b>
+          <button class="t-x" type="button" aria-label="Remove chart">×</button>
+        </div>
+        <div class="t-body">
+          <div class="c-bars" data-months="Nov,Dec,Jan,Feb,Mar,Apr,May,Jun" data-vals="2.4,3.1,2.8,3.6,3.2,4.1,3.8,4.6">
+            <i style="--v:52%"></i><i style="--v:67%"></i><i style="--v:61%"></i><i style="--v:78%"></i><i style="--v:70%"></i><i style="--v:89%"></i><i style="--v:83%"></i><i style="--v:100%"></i>
+          </div>
+        </div>
+        <span class="t-rs" aria-hidden="true"></span>
+      </div>
+
+      <div class="tile" style="--w:4;--h:2" data-title="Collections trend">
+        <div class="t-head">
+          <button class="t-handle" type="button" aria-label="Drag to move" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></button>
+          <b>Collections trend</b>
+          <button class="t-x" type="button" aria-label="Remove chart">×</button>
+        </div>
+        <div class="t-body">
+          <div class="c-line">
+            <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 32 L16.6 26 L33.3 29 L50 18 L66.6 22 L83.3 12 L100 8 L100 40 L0 40 Z" fill="rgba(0,134,148,.09)"/>
+              <path d="M0 32 L16.6 26 L33.3 29 L50 18 L66.6 22 L83.3 12 L100 8" fill="none" stroke="var(--chart-line)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <div class="cols" data-weeks="W1,W2,W3,W4,W5,W6,W7" data-vals="₹38K,₹52K,₹45K,₹71K,₹62K,₹86K,₹94K">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+        <span class="t-rs" aria-hidden="true"></span>
+      </div>
+
+      <div class="tile" style="--w:2;--h:2" data-title="Top items">
+        <div class="t-head">
+          <button class="t-handle" type="button" aria-label="Drag to move" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></button>
+          <b>Top items</b>
+          <button class="t-x" type="button" aria-label="Remove chart">×</button>
+        </div>
+        <div class="t-body">
+          <div class="c-table">
+            <div class="r"><b>Cotton Saree</b><span>₹1.2L</span></div>
+            <div class="r"><b>Kurta Set</b><span>₹86K</span></div>
+            <div class="r"><b>Silk Dupatta</b><span>₹64K</span></div>
+          </div>
+        </div>
+        <span class="t-rs" aria-hidden="true"></span>
+      </div>
+
+    </div>
+
+    <!-- library shelf: saved charts you can drag onto the section -->
+    <div class="shelf" id="shelf">
+      <p class="shelf-label">Chart library — drag onto the grid</p>
+      <div class="shelf-items" id="shelf-items">
+        <div class="shelf-item" data-type="donut" data-title="Payment mix">
+          <span class="shelf-thumb" aria-hidden="true">
+            <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="12" fill="none" stroke="var(--grey-200)" stroke-width="7"/><circle cx="18" cy="18" r="12" fill="none" stroke="var(--chart-line)" stroke-width="7" stroke-dasharray="48.3 27.1" stroke-dashoffset="18.85" transform="rotate(-90 18 18)"/></svg>
+          </span>
+          <span><b>Payment mix</b><small>pie · this month</small></span>
+        </div>
+        <div class="shelf-item" data-type="bars2" data-title="Expenses by week">
+          <span class="shelf-thumb" aria-hidden="true"><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i><i style="height:62%"></i></span>
+          <span><b>Expenses by week</b><small>bar · this month</small></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="toast" id="toast" role="status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <span id="toast-msg">Layout saved</span>
+    </p>
+  </div>
+
+  <div class="dash-meta">
+    <h3>Your dashboard, arranged your way</h3>
+    <p>This is the real editor: hit <b>Edit layout</b>, drag charts by the handle, resize from the corner, pull new ones in from the library — then save. Positions persist, per user.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const card  = document.getElementById('card');
+  const grid  = document.getElementById('grid');
+  const stage = document.getElementById('stage');
+  const shelfItems = document.getElementById('shelf-items');
+  let editing = false;
+
+  /* ---------- edit mode toggle (Edit → ✓ Done, mirrors SectionPage) ---------- */
+  const editBtn = document.getElementById('edit-btn');
+  const editIc  = document.getElementById('edit-ic');
+  const editLabel = document.getElementById('edit-label');
+  const PENCIL='<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>';
+  const CHECK='<path d="M20 6 9 17l-5-5"/>';
+  editBtn.addEventListener('click', ()=>{
+    editing = !editing;
+    card.classList.toggle('editing', editing);
+    editBtn.setAttribute('aria-pressed', editing);
+    editIc.innerHTML = editing ? CHECK : PENCIL;
+    editLabel.textContent = editing ? 'Done' : 'Edit layout';
+    if (!editing) toast('Layout saved');
+  });
+
+  function toast(msg){
+    const t=document.getElementById('toast');
+    document.getElementById('toast-msg').textContent=msg;
+    t.classList.add('on');
+    clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),1800);
+  }
+
+  /* ---------- drag: reorder tiles / pull charts in from the shelf ---------- */
+  let drag=null, ghost=null;
+  function makeGhost(label,x,y){
+    ghost=document.createElement('div'); ghost.className='ghost'; ghost.textContent=label;
+    document.body.appendChild(ghost); moveGhost(x,y);
+  }
+  function moveGhost(x,y){ if(ghost){ghost.style.left=x+'px'; ghost.style.top=y+'px';} }
+  function killGhost(){ if(ghost){ghost.remove(); ghost=null;} }
+
+  stage.addEventListener('pointerdown', e=>{
+    if(!editing) return;
+    const handle = e.target.closest('.t-handle');
+    const shelfIt = e.target.closest('.shelf-item');
+    if (handle){
+      const tile = handle.closest('.tile');
+      drag = {kind:'tile', el:tile};
+      tile.classList.add('dragging');
+      makeGhost(tile.dataset.title, e.clientX, e.clientY);
+      e.preventDefault();
+    } else if (shelfIt){
+      drag = {kind:'shelf', el:shelfIt};
+      makeGhost(shelfIt.dataset.title, e.clientX, e.clientY);
+      e.preventDefault();
+    }
+  });
+
+  addEventListener('pointermove', e=>{
+    if(!drag) return;
+    moveGhost(e.clientX, e.clientY);
+    if (drag.kind!=='tile') return;
+    const over = document.elementFromPoint(e.clientX, e.clientY);
+    const target = over && over.closest('.tile:not(.dragging)');
+    if (target && target.parentElement===grid){
+      const r = target.getBoundingClientRect();
+      /* row-major: pointer in the first half of the target (reading order) inserts before */
+      const before = ((e.clientY - r.top) / r.height) < .5 || ((e.clientY - r.top)/r.height < .8 && (e.clientX - r.left)/r.width < .4);
+      grid.insertBefore(drag.el, before ? target : target.nextSibling);
+    }
+  });
+
+  addEventListener('pointerup', e=>{
+    if(!drag) return;
+    if (drag.kind==='shelf'){
+      const over = document.elementFromPoint(e.clientX, e.clientY);
+      if (over && over.closest('#grid')){
+        const t = buildTile(drag.el.dataset.type, drag.el.dataset.title);
+        const target = over.closest('.tile');
+        grid.insertBefore(t, target || null);
+        drag.el.remove();
+        if(!shelfItems.children.length) shelfItems.innerHTML='<p class="shelf-empty">Everything’s on the board — remove a tile to shelve it.</p>';
+        toast(drag.el.dataset.title+' added');
+      }
+    } else {
+      drag.el.classList.remove('dragging');
+    }
+    drag=null; killGhost();
+  });
+
+  /* ---------- remove a tile → back to the shelf ---------- */
+  grid.addEventListener('click', e=>{
+    const x=e.target.closest('.t-x'); if(!x||!editing) return;
+    const tile=x.closest('.tile');
+    const empty=shelfItems.querySelector('.shelf-empty'); if(empty) empty.remove();
+    const it=document.createElement('div');
+    it.className='shelf-item'; it.dataset.type='restored'; it.dataset.title=tile.dataset.title;
+    it.innerHTML='<span class="shelf-thumb" aria-hidden="true"><i style="height:45%"></i><i style="height:75%"></i><i style="height:60%"></i><i style="height:88%"></i></span>'+
+      '<span><b>'+tile.dataset.title+'</b><small>saved chart</small></span>';
+    it._restore = tile;               /* keep the real tile so nothing is lost */
+    shelfItems.appendChild(it);
+    tile.remove();
+    toast(tile.dataset.title+' moved to library');
+  });
+
+  /* dragging a restored item back re-inserts its original tile */
+  function buildTile(type, title){
+    const restored=[...shelfItems.children].find(c=>c.dataset&&c.dataset.title===title&&c._restore);
+    if (restored) return restored._restore;
+    const t=document.createElement('div');
+    t.className='tile'; t.style.cssText='--w:2;--h:2'; t.dataset.title=title;
+    const head='<div class="t-head"><button class="t-handle" type="button" aria-label="Drag to move" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg></button><b>'+title+'</b><button class="t-x" type="button" aria-label="Remove chart">×</button></div>';
+    let body='';
+    if (type==='donut'){
+      t.style.cssText='--w:3;--h:2';
+      body='<div class="t-body"><div class="c-donut">'+
+        '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="12" fill="none" stroke="var(--grey-200)" stroke-width="7"/><circle cx="18" cy="18" r="12" fill="none" stroke="var(--chart-line)" stroke-width="7" stroke-dasharray="48.3 27.1" stroke-dashoffset="18.85" transform="rotate(-90 18 18)"/></svg>'+
+        '<span class="dl"><span><i style="background:var(--chart-line)"></i>UPI · 64%</span><span><i style="background:var(--grey-200)"></i>Cash · 36%</span></span>'+
+        '</div></div>';
+    } else {
+      t.style.cssText='--w:3;--h:2';
+      body='<div class="t-body"><div class="c-bars" data-months="W1,W2,W3,W4,W5" data-vals="12K,21K,16.5K,27K,18.6K">'+
+        '<i style="--v:40%"></i><i style="--v:70%"></i><i style="--v:55%"></i><i style="--v:90%"></i><i style="--v:62%"></i></div></div>';
+    }
+    t.innerHTML=head+body+'<span class="t-rs" aria-hidden="true"></span>';
+    wireTips(t);
+    return t;
+  }
+
+  /* ---------- resize from the corner (spans snap to the grid, min 2×1 / max 6×4) ---------- */
+  let rs=null;
+  stage.addEventListener('pointerdown', e=>{
+    const h=e.target.closest('.t-rs'); if(!h||!editing) return;
+    const tile=h.closest('.tile');
+    const cs=getComputedStyle(tile);
+    rs={tile, x:e.clientX, y:e.clientY,
+        w:+cs.getPropertyValue('--w')||2, h:+cs.getPropertyValue('--h')||2,
+        colPx:(grid.clientWidth-5*12)/6+12, rowPx:52+12};
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+  addEventListener('pointermove', e=>{
+    if(!rs) return;
+    const w=Math.max(2, Math.min(6, rs.w+Math.round((e.clientX-rs.x)/rs.colPx)));
+    const h=Math.max(1, Math.min(4, rs.h+Math.round((e.clientY-rs.y)/rs.rowPx)));
+    rs.tile.style.setProperty('--w', w);
+    rs.tile.style.setProperty('--h', h);
+  });
+  addEventListener('pointerup', ()=>{ rs=null; });
+
+  /* ---------- hover layer: tooltips on bars and the line (dataviz §5) ---------- */
+  const tip=document.createElement('div'); tip.className='tip'; document.body.appendChild(tip);
+  function showTip(x,y,html){ tip.innerHTML=html; tip.style.left=x+'px'; tip.style.top=y+'px'; tip.classList.add('on'); }
+  function hideTip(){ tip.classList.remove('on'); }
+  function wireTips(root){
+    root.querySelectorAll('.c-bars').forEach(c=>{
+      const months=(c.dataset.months||'').split(','), vals=(c.dataset.vals||'').split(',');
+      [...c.children].forEach((bar,i)=>{
+        bar.addEventListener('pointerenter',()=>{const r=bar.getBoundingClientRect();
+          showTip(r.left+r.width/2, r.top, (vals[i]?.trim().startsWith('₹')?vals[i]:'₹'+(vals[i]||'')+'L')+'<small>'+(months[i]||'')+'</small>');});
+        bar.addEventListener('pointerleave',hideTip);
+      });
+    });
+    root.querySelectorAll('.c-line .cols').forEach(c=>{
+      const weeks=(c.dataset.weeks||'').split(','), vals=(c.dataset.vals||'').split(',');
+      [...c.children].forEach((col,i)=>{
+        col.addEventListener('pointerenter',()=>{const r=col.getBoundingClientRect();
+          showTip(r.left+r.width/2, r.top+r.height*.25, (vals[i]||'')+'<small>'+(weeks[i]||'')+' collected</small>');});
+        col.addEventListener('pointerleave',hideTip);
+      });
+    });
+  }
+  wireTips(grid);
+  addEventListener('scroll', hideTip, {passive:true});
+})();
+</script>
+</body>
+</html>

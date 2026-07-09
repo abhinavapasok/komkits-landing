@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motion Patterns Lab</title>
+<style>
+  :root{
+    --ink:#12141A;
+    --panel:#1B1E27;
+    --panel-2:#232733;
+    --paper:#E4E6EC;
+    --muted:#7B8094;
+    --accent:#4E7CFF;
+    --accent-2:#FF9B42;
+    --line: rgba(228,230,236,0.12);
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.5;
+  }
+
+  ::selection{ background:var(--accent); color:var(--ink); }
+
+  /* ---------- Ruler / progress signature ---------- */
+  #ruler{
+    position:fixed;
+    right:24px;
+    top:50%;
+    transform:translateY(-50%);
+    height:60vh;
+    width:26px;
+    z-index:50;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    pointer-events:none;
+  }
+  #ruler .tick{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--muted);
+    transition:color .2s ease;
+  }
+  #ruler .tick::before{
+    content:'';
+    width:10px;
+    height:1px;
+    background:var(--muted);
+    transition:background .2s ease, width .2s ease;
+  }
+  #ruler .tick.active{ color:var(--accent-2); }
+  #ruler .tick.active::before{ background:var(--accent-2); width:18px; }
+  @media (max-width: 900px){ #ruler{ display:none; } }
+
+  /* ---------- Header ---------- */
+  header{
+    min-height:70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:8vh 8vw 6vh;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:18px;
+  }
+  h1{
+    font-family:var(--mono);
+    font-size:clamp(32px, 6vw, 68px);
+    line-height:1.05;
+    margin:0 0 20px;
+    max-width:16ch;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    max-width:56ch;
+    color:var(--muted);
+    font-size:17px;
+  }
+  .scroll-hint{
+    margin-top:48px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+  }
+  .scroll-hint span{ display:inline-block; animation:bob 1.6s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(6px);} }
+
+  section{ padding:14vh 8vw; border-bottom:1px solid var(--line); position:relative; }
+  section.tight{ padding-top:8vh; padding-bottom:8vh; }
+
+  .label{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--accent-2);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h2{
+    font-family:var(--mono);
+    font-size:clamp(22px, 3vw, 32px);
+    margin:0 0 14px;
+  }
+  .desc{ color:var(--muted); max-width:60ch; margin-bottom:48px; }
+
+  /* ================= 1. STICKY PINNED SCROLLYTELLING ================= */
+  .pin-wrap{ position:relative; height:300vh; }
+  .pin-stage{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:60px;
+    align-items:center;
+    padding:0 8vw;
+  }
+  .pin-copy{ font-family:var(--mono); }
+  .pin-copy .step{
+    opacity:.25;
+    transition:opacity .3s ease;
+    padding:14px 0;
+    font-size:15px;
+    border-left:2px solid var(--line);
+    padding-left:18px;
+    margin-bottom:6px;
+  }
+  .pin-copy .step.active{ opacity:1; border-left-color:var(--accent); color:var(--paper); }
+  .pin-copy .step .num{ color:var(--accent-2); margin-right:8px; }
+
+  .diagram{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:36px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .module{
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:14px 16px;
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--muted);
+    background:var(--panel-2);
+    transition:border-color .3s ease, color .3s ease, box-shadow .3s ease, transform .3s ease;
+  }
+  .module.lit{
+    border-color:var(--accent);
+    color:var(--paper);
+    box-shadow:0 0 0 1px var(--accent), 0 0 24px -6px var(--accent);
+    transform:translateX(6px);
+  }
+  .module.lit .tag{ color:var(--accent-2); }
+  .module .tag{ color:var(--muted); margin-right:8px; }
+
+  @media (max-width:800px){
+    .pin-stage{ grid-template-columns:1fr; }
+  }
+
+  /* ================= 2. HORIZONTAL SCROLL ================= */
+  .hz-wrap{ position:relative; height:340vh; }
+  .hz-stage{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+  }
+  .hz-track{
+    display:flex;
+    gap:28px;
+    padding-left:8vw;
+    will-change:transform;
+  }
+  .hz-card{
+    flex:0 0 340px;
+    height:420px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:28px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .hz-card .idx{ font-family:var(--mono); color:var(--accent); font-size:13px; }
+  .hz-card h3{ font-family:var(--mono); font-size:20px; margin:16px 0 10px; }
+  .hz-card p{ color:var(--muted); font-size:14px; }
+  .hz-swatch{ height:120px; border-radius:6px; margin-bottom:20px; }
+
+  /* ================= 3. PARALLAX ================= */
+  .parallax-wrap{
+    height:100vh;
+    position:relative;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .plx-layer{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    will-change:transform;
+  }
+  .plx-back{ font-size:min(24vw,260px); font-family:var(--mono); color:var(--panel-2); font-weight:700; }
+  .plx-mid{ font-size:min(9vw,90px); font-family:var(--mono); color:var(--panel-2); border:1px solid var(--line); }
+  .plx-front-inner{
+    text-align:center;
+  }
+  .plx-front .label{ justify-content:center; display:flex; }
+  .plx-front h2{ text-align:center; }
+
+  /* ================= 4. SCROLL-DRIVEN COUNTERS ================= */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:24px;
+  }
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:28px;
+  }
+  .stat .num{
+    font-family:var(--mono);
+    font-size:44px;
+    color:var(--accent);
+  }
+  .stat .cap{ color:var(--muted); font-size:13px; margin-top:8px; }
+  .bar-track{
+    height:6px; background:var(--panel-2); border-radius:3px; margin-top:16px; overflow:hidden;
+  }
+  .bar-fill{ height:100%; width:0%; background:var(--accent); }
+  @media (max-width:800px){ .stats{ grid-template-columns:1fr; } }
+
+  /* ================= 5. MAGNETIC BUTTON ================= */
+  .magnet-zone{ display:flex; justify-content:center; padding:40px 0; }
+  .magnet-btn{
+    font-family:var(--mono);
+    font-size:15px;
+    background:var(--accent);
+    color:var(--ink);
+    border:none;
+    border-radius:999px;
+    padding:18px 36px;
+    cursor:pointer;
+    transition:transform .15s ease-out, background .2s ease;
+  }
+  .magnet-btn:hover{ background:var(--accent-2); }
+
+  /* ================= 6. TILT CARD ================= */
+  .tilt-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+  .tilt-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:26px;
+    perspective:600px;
+    transform-style:preserve-3d;
+    transition:transform .12s ease-out, box-shadow .12s ease-out;
+  }
+  .tilt-card h3{ font-family:var(--mono); margin:0 0 8px; font-size:17px; }
+  .tilt-card p{ color:var(--muted); font-size:13px; margin:0; }
+  @media (max-width:800px){ .tilt-row{ grid-template-columns:1fr; } }
+
+  /* ================= 7. TEXT SCRAMBLE ================= */
+  .scramble-zone{ text-align:center; }
+  .scramble{
+    font-family:var(--mono);
+    font-size:clamp(22px,4vw,36px);
+    color:var(--accent);
+    cursor:pointer;
+    display:inline-block;
+  }
+  .scramble-hint{ display:block; font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:14px; }
+
+  /* ================= 8. SVG LINE DRAW ================= */
+  .draw-zone{ display:flex; justify-content:center; }
+  .draw-path{
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transition: stroke-dashoffset 1.4s ease;
+  }
+  .draw-path.drawn{ stroke-dashoffset:0; }
+
+  /* ================= 9. BEAM CONNECTORS ================= */
+  .beam-zone{ display:flex; justify-content:center; }
+  .beam-zone svg{ width:min(680px,100%); height:auto; }
+  .beam-node rect{ fill:var(--panel-2); stroke:var(--line); }
+  .beam-node text{ font-family:var(--mono); font-size:13px; fill:var(--paper); }
+  .beam-node .sub{ font-size:10px; fill:var(--muted); }
+  .beam-wire{ stroke:var(--line); stroke-width:1.5; fill:none; }
+  .beam-dot{ fill:var(--accent); filter:drop-shadow(0 0 5px var(--accent)); }
+  .beam-dot.alt{ fill:var(--accent-2); filter:drop-shadow(0 0 5px var(--accent-2)); }
+
+  /* ================= 10. CHAT SIMULATION ================= */
+  .chat-panel{
+    max-width:520px; margin:0 auto; background:var(--panel);
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  .chat-head{
+    padding:12px 16px; border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:12px; color:var(--muted);
+    display:flex; gap:8px; align-items:center;
+  }
+  .chat-head::before{ content:''; width:8px; height:8px; border-radius:50%; background:var(--accent-2); }
+  .chat-body{ padding:18px; display:flex; flex-direction:column; gap:12px; min-height:280px; }
+  .bubble{ max-width:88%; padding:10px 14px; border-radius:10px; font-size:14px; }
+  .bubble.user{ align-self:flex-end; background:var(--accent); color:var(--ink); font-family:var(--mono); min-height:1.4em; }
+  .bubble.bot{ align-self:flex-start; background:var(--panel-2); border:1px solid var(--line); }
+  .caret{ display:inline-block; width:8px; height:1em; background:var(--ink); margin-left:2px; vertical-align:-2px; animation:blink .9s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+  .tdot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--muted); margin-right:4px; animation:tb 1s ease-in-out infinite; }
+  .tdot:nth-child(2){ animation-delay:.15s; }
+  .tdot:nth-child(3){ animation-delay:.3s; }
+  @keyframes tb{ 30%{ transform:translateY(-4px); } }
+  .pay-row{
+    display:grid; grid-template-columns:1fr 90px 72px; gap:10px; align-items:center;
+    font-size:12.5px; margin-top:10px;
+    opacity:0; transform:translateY(6px); transition:opacity .4s, transform .4s;
+  }
+  .pay-row.show{ opacity:1; transform:none; }
+  .pay-row b{ text-align:right; font-family:var(--mono); font-weight:600; }
+  .pay-bar{ height:6px; background:var(--ink); border-radius:3px; overflow:hidden; }
+  .pay-bar i{ display:block; height:100%; width:0; background:var(--accent); transition:width .8s ease .15s; }
+  .pay-row.show .pay-bar i{ width:var(--w); }
+
+  /* ================= 11. BENTO + SPOTLIGHT ================= */
+  .bento{ display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:130px; gap:16px; }
+  .bento-cell{ position:relative; border:1px solid var(--line); border-radius:10px; background:var(--panel); overflow:hidden; }
+  .bento-cell .glow{
+    position:absolute; inset:0; opacity:0; transition:opacity .3s; pointer-events:none;
+    background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), rgba(78,124,255,.22), transparent 65%);
+  }
+  .bento-cell:hover .glow{ opacity:1; }
+  .bento-inner{ position:relative; padding:18px; height:100%; display:flex; flex-direction:column; gap:8px; }
+  .bento-inner h3{ font-family:var(--mono); font-size:14px; margin:0; }
+  .bento-inner p{ font-size:12.5px; color:var(--muted); margin:0; }
+  .b-2x2{ grid-column:span 2; grid-row:span 2; }
+  .b-2x1{ grid-column:span 2; }
+  .mini-bubble{ border:1px solid var(--line); background:var(--panel-2); border-radius:8px; padding:8px 10px; font-size:12px; }
+  .mini-bubble.q{ font-family:var(--mono); color:var(--accent); align-self:flex-end; }
+  .bill-flow{ display:flex; align-items:center; gap:10px; margin-top:auto; }
+  .bill-photo{ width:44px; height:56px; border:1px dashed var(--muted); border-radius:4px; }
+  .bill-rows{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  .bill-rows i{ height:9px; border-radius:3px; background:var(--panel-2); display:block; }
+  .bill-arrow{ color:var(--accent); font-family:var(--mono); }
+  .spark{ margin-top:auto; }
+  .chip-row{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
+  .chip-row span{ border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .report-bars{ display:flex; gap:6px; align-items:flex-end; height:44px; margin-top:auto; }
+  .report-bars i{ flex:1; background:var(--accent); opacity:.8; border-radius:2px 2px 0 0; }
+  @media (max-width:800px){
+    .bento{ grid-template-columns:1fr 1fr; grid-auto-rows:150px; }
+  }
+
+  /* ================= 12. BEFORE / AFTER SLIDER ================= */
+  .ba-wrap{
+    position:relative; max-width:760px; height:340px; margin:0 auto;
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    --pos:50%; cursor:ew-resize; user-select:none; touch-action:none;
+  }
+  .ba-layer{ position:absolute; inset:0; padding:22px; }
+  .ba-before{ background:var(--panel-2); }
+  .ba-after{ background:var(--panel); clip-path:inset(0 0 0 var(--pos)); }
+  .ba-tag{ position:absolute; top:14px; font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--muted); }
+  .ba-before .ba-tag{ left:16px; }
+  .ba-after .ba-tag{ right:16px; color:var(--accent); }
+  .ba-chip{
+    position:absolute; padding:8px 12px; background:var(--ink); border:1px solid var(--line);
+    border-radius:6px; font-family:var(--mono); font-size:11px; color:var(--muted);
+    transform:rotate(var(--r,0deg));
+  }
+  .ba-sheet{ position:absolute; inset:150px 24px 24px; display:grid; grid-template-columns:repeat(6,1fr); gap:2px; opacity:.45; }
+  .ba-sheet i{ background:var(--panel); height:20px; }
+  .ba-dash{ margin-top:38px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .ba-tile{ background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:12px; }
+  .ba-tile .v{ font-family:var(--mono); color:var(--accent); font-size:20px; }
+  .ba-tile .c{ font-size:10.5px; color:var(--muted); margin-top:4px; }
+  .ba-bars{ display:flex; gap:8px; align-items:flex-end; height:104px; margin-top:18px; }
+  .ba-bars i{ flex:1; background:var(--accent); opacity:.85; border-radius:3px 3px 0 0; }
+  .ba-divider{ position:absolute; top:0; bottom:0; left:var(--pos); width:2px; background:var(--accent); transform:translateX(-1px); }
+  .ba-handle{
+    position:absolute; top:50%; left:var(--pos); transform:translate(-50%,-50%);
+    width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px;
+  }
+
+  /* ================= 13. LOGO MARQUEE ================= */
+  .marquee{
+    overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .mq-track{ display:flex; width:max-content; animation:marq 26s linear infinite; }
+  .marquee:hover .mq-track{ animation-play-state:paused; }
+  .mq-set{ display:flex; gap:72px; padding-right:72px; align-items:center; }
+  .mq-set span{ font-family:var(--mono); font-size:18px; font-weight:700; letter-spacing:.08em; color:var(--muted); white-space:nowrap; }
+  @keyframes marq{ to{ transform:translateX(-50%); } }
+
+  footer{
+    padding:8vh 8vw;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<div id="ruler">
+  <div class="tick" data-target="sec-pin">01 pin</div>
+  <div class="tick" data-target="sec-hz">02 hz</div>
+  <div class="tick" data-target="sec-parallax">03 parallax</div>
+  <div class="tick" data-target="sec-counters">04 counters</div>
+  <div class="tick" data-target="sec-magnet">05 magnet</div>
+  <div class="tick" data-target="sec-tilt">06 tilt</div>
+  <div class="tick" data-target="sec-scramble">07 scramble</div>
+  <div class="tick" data-target="sec-draw">08 draw</div>
+  <div class="tick" data-target="sec-beams">09 beams</div>
+  <div class="tick" data-target="sec-chat">10 chat</div>
+  <div class="tick" data-target="sec-bento">11 bento</div>
+  <div class="tick" data-target="sec-compare">12 compare</div>
+  <div class="tick" data-target="sec-marquee">13 marquee</div>
+</div>
+
+<header>
+  <div class="eyebrow">Motion Patterns Lab</div>
+  <h1>Thirteen ways to make the page do the talking.</h1>
+  <p>A working sample of the patterns we discussed — sticky pins, horizontal tracks, parallax depth, scroll-scrubbed counters, and a few hover-driven extras. Set 2 (09–13) adds beam connectors, a self-driving chat demo, a bento grid with spotlight cards, a before/after slider and a logo marquee. Scroll down; every section is live.</p>
+  <div class="scroll-hint">↓ <span>scroll to begin</span></div>
+</header>
+
+<!-- ============ 1. STICKY PINNED SCROLLYTELLING ============ -->
+<section class="tight" id="sec-pin">
+  <div class="label">01 · Scroll-scrubbed pin</div>
+  <h2>The diagram stays put. The scroll drives which module lights up.</h2>
+  <p class="desc">Progress through this section is mapped to a 0–1 value; each module crosses a threshold and lights up in turn. Scroll back up and it un-lights in reverse — nothing here is a one-shot trigger.</p>
+</section>
+<div class="pin-wrap" id="pin-wrap">
+  <div class="pin-stage">
+    <div class="pin-copy">
+      <div class="step" data-idx="0"><span class="num">01</span>Request hits the edge router.</div>
+      <div class="step" data-idx="1"><span class="num">02</span>Auth service validates the session.</div>
+      <div class="step" data-idx="2"><span class="num">03</span>Core API resolves the query.</div>
+      <div class="step" data-idx="3"><span class="num">04</span>Cache layer serves or stores the result.</div>
+    </div>
+    <div class="diagram">
+      <div class="module" data-idx="0"><span class="tag">edge</span>Router</div>
+      <div class="module" data-idx="1"><span class="tag">svc</span>Auth</div>
+      <div class="module" data-idx="2"><span class="tag">svc</span>Core API</div>
+      <div class="module" data-idx="3"><span class="tag">data</span>Cache</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. HORIZONTAL SCROLL ============ -->
+<section class="tight" id="sec-hz">
+  <div class="label">02 · Vertical scroll → horizontal track</div>
+  <h2>Keep scrolling down; the cards move sideways.</h2>
+  <p class="desc">Vertical scroll progress inside this section is read and mapped onto a horizontal transform. Common for galleries and step sequences where you want a filmstrip feel without a real horizontal scrollbar.</p>
+</section>
+<div class="hz-wrap" id="hz-wrap">
+  <div class="hz-stage">
+    <div class="hz-track" id="hz-track">
+      <div class="hz-card"><div class="idx">01</div><div class="hz-swatch" style="background:#2A3550"></div><h3>Discover</h3><p>The entry point — first touch, first impression.</p></div>
+      <div class="hz-card"><div class="idx">02</div><div class="hz-swatch" style="background:#3A2A50"></div><h3>Evaluate</h3><p>Comparing against alternatives, weighing tradeoffs.</p></div>
+      <div class="hz-card"><div class="idx">03</div><div class="hz-swatch" style="background:#503A2A"></div><h3>Adopt</h3><p>Committing, integrating, making it part of the workflow.</p></div>
+      <div class="hz-card"><div class="idx">04</div><div class="hz-swatch" style="background:#2A5039"></div><h3>Advocate</h3><p>Recommending it onward, becoming a reference.</p></div>
+      <div class="hz-card"><div class="idx">05</div><div class="hz-swatch" style="background:#502A2A"></div><h3>Extend</h3><p>Pushing past the default use case into new territory.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. PARALLAX ============ -->
+<div class="parallax-wrap" id="sec-parallax">
+  <div class="plx-layer plx-back" id="plx-back">MOTION</div>
+  <div class="plx-layer plx-mid" id="plx-mid">
+    <div style="padding:20px 40px; border-radius:6px;">layer 02</div>
+  </div>
+  <div class="plx-layer plx-front">
+    <div class="plx-front-inner">
+      <div class="label">03 · Parallax depth</div>
+      <h2>Three layers, three speeds, one scroll.</h2>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4. SCROLL-DRIVEN COUNTERS ============ -->
+<section id="sec-counters">
+  <div class="label">04 · Progress-driven counters</div>
+  <h2>Numbers climb to their final value as they enter view.</h2>
+  <p class="desc">Tied to intersection progress rather than a fixed CSS duration, so a fast scroll finishes the count faster and a slow scroll stretches it out.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="num" data-target="128">0</div>
+      <div class="cap">modules shipped</div>
+      <div class="bar-track"><div class="bar-fill" data-target="128" data-max="150"></div></div>
+    </div>
+    <div class="stat">
+      <div class="num" data-target="42">0</div>
+      <div class="cap">ms median latency</div>
+      <div class="bar-track"><div class="bar-fill" data-target="42" data-max="150"></div></div>
+    </div>
+    <div class="stat">
+      <div class="num" data-target="99">0</div>
+      <div class="cap">% uptime, rolling 90d</div>
+      <div class="bar-track"><div class="bar-fill" data-target="99" data-max="100"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. MAGNETIC BUTTON ============ -->
+<section id="sec-magnet">
+  <div class="label">05 · Magnetic button</div>
+  <h2>Hover near it — it leans toward the cursor.</h2>
+  <p class="desc">Reads cursor position relative to the button's center and nudges it a few pixels, snapping back on mouse-leave.</p>
+  <div class="magnet-zone">
+    <button class="magnet-btn" id="magnetBtn">Try hovering near me</button>
+  </div>
+</section>
+
+<!-- ============ 6. TILT CARDS ============ -->
+<section id="sec-tilt">
+  <div class="label">06 · Cursor tilt</div>
+  <h2>Cards rotate in 3D based on where the cursor sits.</h2>
+  <p class="desc">Cursor position over each card maps to rotateX/rotateY, giving a light, physical response without a JS animation library.</p>
+  <div class="tilt-row">
+    <div class="tilt-card"><h3>Latency</h3><p>Read the raw signal, don't smooth it into meaninglessness.</p></div>
+    <div class="tilt-card"><h3>Throughput</h3><p>Design for the busy hour, not the average one.</p></div>
+    <div class="tilt-card"><h3>Resilience</h3><p>Assume the dependency fails; plan the fallback first.</p></div>
+  </div>
+</section>
+
+<!-- ============ 7. TEXT SCRAMBLE ============ -->
+<section id="sec-scramble">
+  <div class="label">07 · Text scramble</div>
+  <h2 style="text-align:center;">Hover the line below.</h2>
+  <div class="scramble-zone">
+    <span class="scramble" id="scrambleText" data-text="DECODE ON HOVER">DECODE ON HOVER</span>
+    <span class="scramble-hint">characters shuffle briefly, then settle</span>
+  </div>
+</section>
+
+<!-- ============ 8. SVG DRAW ON SCROLL ============ -->
+<section id="sec-draw">
+  <div class="label">08 · SVG line-draw</div>
+  <h2>The path draws itself once it enters view.</h2>
+  <p class="desc">stroke-dasharray / stroke-dashoffset animate from fully hidden to fully drawn, triggered by an IntersectionObserver.</p>
+  <div class="draw-zone">
+    <svg width="520" height="180" viewBox="0 0 520 180" fill="none">
+      <path class="draw-path" id="drawPath" d="M10,140 C 100,20 180,160 260,90 S 420,10 510,60"
+        stroke="#4E7CFF" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="10" cy="140" r="5" fill="#FF9B42"/>
+      <circle cx="510" cy="60" r="5" fill="#FF9B42"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ 9. BEAM CONNECTORS ============ -->
+<section id="sec-beams">
+  <div class="label">09 · Beam connectors</div>
+  <h2>The wires carry traffic.</h2>
+  <p class="desc">Pulses travel module → core → AI → out, on repeat (SMIL animateMotion along the same paths the wires use — zero JS). Turns a static architecture diagram into a live system. Blue = internal flow, orange = leaving via MCP.</p>
+  <div class="beam-zone">
+    <svg viewBox="0 0 640 340" role="img" aria-label="Animated architecture: modules feed the core, the core feeds the AI engine, the AI engine feeds external assistants.">
+      <path id="bw0" class="beam-wire" d="M115 60 V90 H320 V118"/>
+      <path id="bw1" class="beam-wire" d="M320 60 V118"/>
+      <path id="bw2" class="beam-wire" d="M525 60 V90 H320 V118"/>
+      <path id="bw3" class="beam-wire" d="M320 166 V198"/>
+      <path id="bw4" class="beam-wire" d="M320 246 V264 H115 V278"/>
+      <path id="bw5" class="beam-wire" d="M320 246 V278"/>
+      <path id="bw6" class="beam-wire" d="M320 246 V264 H525 V278"/>
+
+      <g class="beam-node">
+        <rect x="40" y="20" width="150" height="40" rx="5"/><text x="115" y="45" text-anchor="middle">Invoicing</text>
+        <rect x="245" y="20" width="150" height="40" rx="5"/><text x="320" y="45" text-anchor="middle">Inventory</text>
+        <rect x="450" y="20" width="150" height="40" rx="5"/><text x="525" y="45" text-anchor="middle">Payments</text>
+        <rect x="220" y="118" width="200" height="48" rx="5"/>
+        <text x="320" y="139" text-anchor="middle">KomKits Core</text>
+        <text x="320" y="156" text-anchor="middle" class="sub">one source of truth</text>
+        <rect x="220" y="198" width="200" height="48" rx="5"/>
+        <text x="320" y="219" text-anchor="middle">AI Engine</text>
+        <text x="320" y="236" text-anchor="middle" class="sub">BYOK · reports · insights</text>
+        <rect x="40" y="278" width="150" height="40" rx="5"/><text x="115" y="303" text-anchor="middle">ChatGPT</text>
+        <rect x="245" y="278" width="150" height="40" rx="5"/><text x="320" y="303" text-anchor="middle">Claude</text>
+        <rect x="450" y="278" width="150" height="40" rx="5"/><text x="525" y="303" text-anchor="middle">Any MCP app</text>
+      </g>
+
+      <circle class="beam-dot" r="3"><animateMotion dur="2.2s" repeatCount="indefinite" begin="0s"><mpath href="#bw0"/></animateMotion></circle>
+      <circle class="beam-dot" r="3"><animateMotion dur="1.8s" repeatCount="indefinite" begin="0.7s"><mpath href="#bw1"/></animateMotion></circle>
+      <circle class="beam-dot" r="3"><animateMotion dur="2.2s" repeatCount="indefinite" begin="1.3s"><mpath href="#bw2"/></animateMotion></circle>
+      <circle class="beam-dot" r="3"><animateMotion dur="1.4s" repeatCount="indefinite" begin="0.4s"><mpath href="#bw3"/></animateMotion></circle>
+      <circle class="beam-dot" r="3"><animateMotion dur="1.4s" repeatCount="indefinite" begin="1.5s"><mpath href="#bw3"/></animateMotion></circle>
+      <circle class="beam-dot alt" r="3"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.2s"><mpath href="#bw4"/></animateMotion></circle>
+      <circle class="beam-dot alt" r="3"><animateMotion dur="1.9s" repeatCount="indefinite" begin="0.9s"><mpath href="#bw5"/></animateMotion></circle>
+      <circle class="beam-dot alt" r="3"><animateMotion dur="2.4s" repeatCount="indefinite" begin="1.6s"><mpath href="#bw6"/></animateMotion></circle>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ 10. CHAT SIMULATION ============ -->
+<section id="sec-chat">
+  <div class="label">10 · Chat simulation</div>
+  <h2>The demo asks itself the question.</h2>
+  <p class="desc">The question types itself, the assistant "thinks", then the answer streams in with data bars. Loops while in view, resets when you scroll away. This is the MCP / ask-your-business pitch shown, not told.</p>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-head">KomKits · Ask your business</div>
+    <div class="chat-body">
+      <div class="bubble user"><span id="chatQ"></span><span class="caret" id="chatCaret"></span></div>
+      <div class="bubble bot" id="chatTyping" hidden><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span></div>
+      <div class="bubble bot" id="chatA" hidden>
+        <div>3 customers have overdue invoices — <b>₹48,200</b> total:</div>
+        <div class="pay-row" style="--w:88%"><span>Sharma Traders</span><span class="pay-bar"><i></i></span><b>₹21,400</b></div>
+        <div class="pay-row" style="--w:64%"><span>Kiran Textiles</span><span class="pay-bar"><i></i></span><b>₹15,600</b></div>
+        <div class="pay-row" style="--w:46%"><span>Novo Retail</span><span class="pay-bar"><i></i></span><b>₹11,200</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. BENTO GRID + SPOTLIGHT ============ -->
+<section id="sec-bento">
+  <div class="label">11 · Bento grid + spotlight cards</div>
+  <h2>Unequal cells, one story.</h2>
+  <p class="desc">The AI section as a bento instead of a uniform card grid — the hero capability gets the big cell. Move the cursor over a cell: a radial spotlight follows it (two CSS vars + one radial-gradient).</p>
+  <div class="bento">
+    <div class="bento-cell b-2x2"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>Ask your business</h3>
+        <p>Natural-language questions over your live data.</p>
+        <div class="mini-bubble q">"top selling item this week?"</div>
+        <div class="mini-bubble">Blue cotton kurti — 142 units, ₹1.9L revenue, up 18% on last week.</div>
+        <div class="mini-bubble q" style="margin-top:auto;">"and slowest?"</div>
+      </div>
+    </div>
+    <div class="bento-cell b-2x1"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>AI bill capture</h3>
+        <div class="bill-flow">
+          <div class="bill-photo"></div>
+          <span class="bill-arrow">→</span>
+          <div class="bill-rows"><i style="width:90%"></i><i style="width:70%"></i><i style="width:80%"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="bento-cell"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>BYOK</h3>
+        <p>Your key, your control.</p>
+      </div>
+    </div>
+    <div class="bento-cell"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>Forecasting</h3>
+        <svg class="spark" width="100%" height="34" viewBox="0 0 120 34" preserveAspectRatio="none">
+          <polyline points="0,28 20,24 40,26 60,18 80,20 100,10 120,6" fill="none" stroke="#4E7CFF" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+    <div class="bento-cell b-2x1"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>MCP server</h3>
+        <div class="chip-row"><span>ChatGPT</span><span>Claude</span><span>Any MCP app</span></div>
+      </div>
+    </div>
+    <div class="bento-cell b-2x1"><div class="glow"></div>
+      <div class="bento-inner">
+        <h3>AI reports</h3>
+        <div class="report-bars"><i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:90%"></i><i style="height:72%"></i><i style="height:100%"></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12. BEFORE / AFTER SLIDER ============ -->
+<section id="sec-compare">
+  <div class="label">12 · Before / after slider</div>
+  <h2>Drag the divider.</h2>
+  <p class="desc">Left: five apps and a spreadsheet. Right: one KomKits. The right layer is clipped with <code>clip-path: inset(0 0 0 var(--pos))</code>; dragging just moves one CSS variable.</p>
+  <div class="ba-wrap" id="baWrap">
+    <div class="ba-layer ba-before">
+      <span class="ba-tag">BEFORE — 5 APPS + EXCEL</span>
+      <span class="ba-chip" style="top:44px; left:24px; --r:-4deg;">Billing app</span>
+      <span class="ba-chip" style="top:66px; left:150px; --r:3deg;">Stock register</span>
+      <span class="ba-chip" style="top:100px; left:60px; --r:-2deg;">Tally export</span>
+      <span class="ba-chip" style="top:88px; left:290px; --r:5deg;">WhatsApp orders</span>
+      <span class="ba-chip" style="top:120px; left:200px; --r:-6deg;">payments_final_v3.xlsx</span>
+      <div class="ba-sheet">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+    </div>
+    <div class="ba-layer ba-after">
+      <span class="ba-tag">AFTER — ONE KOMKITS</span>
+      <div class="ba-dash">
+        <div class="ba-tile"><div class="v">₹4.2L</div><div class="c">sales this month</div></div>
+        <div class="ba-tile"><div class="v">₹48K</div><div class="c">outstanding</div></div>
+        <div class="ba-tile"><div class="v">312</div><div class="c">items in stock</div></div>
+      </div>
+      <div class="ba-bars"><i style="height:35%"></i><i style="height:55%"></i><i style="height:42%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:85%"></i><i style="height:74%"></i><i style="height:100%"></i></div>
+    </div>
+    <div class="ba-divider"></div>
+    <div class="ba-handle">⇄</div>
+  </div>
+</section>
+
+<!-- ============ 13. LOGO MARQUEE ============ -->
+<section id="sec-marquee">
+  <div class="label">13 · Logo marquee</div>
+  <h2>The trust strip that never stops.</h2>
+  <p class="desc">Pure CSS: the track holds two identical sets and animates to −50%; a mask fades the edges. Hover to pause. Makes five placeholder logos read like a crowd.</p>
+  <div class="marquee">
+    <div class="mq-track">
+      <div class="mq-set"><span>RETAILKART</span><span>AGROFRESH</span><span>MEDPLUS CARE</span><span>URBANSTYLE</span><span>KITCHENPRO</span><span>NOVO RETAIL</span></div>
+      <div class="mq-set"><span>RETAILKART</span><span>AGROFRESH</span><span>MEDPLUS CARE</span><span>URBANSTYLE</span><span>KITCHENPRO</span><span>NOVO RETAIL</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>motion-patterns-lab · built as a working reference, not a template</footer>
+
+<script>
+// ---------- helper ----------
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function progressInView(el){
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const total = r.height - vh;
+  if (total <= 0) return r.top <= 0 ? 1 : 0;
+  return clamp((0 - r.top) / total, 0, 1);
+}
+
+// ---------- ruler active state ----------
+const ticks = document.querySelectorAll('#ruler .tick');
+const sections = Array.from(ticks).map(t => document.getElementById(t.dataset.target));
+
+// ---------- 1. sticky pin ----------
+const pinWrap = document.getElementById('pin-wrap');
+const steps = document.querySelectorAll('.pin-copy .step');
+const modules = document.querySelectorAll('.module');
+
+function updatePin(){
+  const p = progressInView(pinWrap); // 0..1
+  const activeIdx = Math.min(3, Math.floor(p * 4));
+  steps.forEach(s => s.classList.toggle('active', parseInt(s.dataset.idx) === activeIdx));
+  modules.forEach(m => m.classList.toggle('lit', parseInt(m.dataset.idx) <= activeIdx));
+}
+
+// ---------- 2. horizontal scroll ----------
+const hzWrap = document.getElementById('hz-wrap');
+const hzTrack = document.getElementById('hz-track');
+function updateHz(){
+  const p = progressInView(hzWrap);
+  const maxScroll = hzTrack.scrollWidth - window.innerWidth + 60;
+  hzTrack.style.transform = `translateX(-${p * maxScroll}px)`;
+}
+
+// ---------- 3. parallax ----------
+const plxWrap = document.getElementById('sec-parallax');
+const plxBack = document.getElementById('plx-back');
+const plxMid = document.getElementById('plx-mid');
+function updateParallax(){
+  const r = plxWrap.getBoundingClientRect();
+  const centered = (r.top) / window.innerHeight; // -1..1 roughly as it passes
+  plxBack.style.transform = `translateY(${centered * 60}px)`;
+  plxMid.style.transform = `translateY(${centered * 140}px)`;
+}
+
+// ---------- 4. counters (IntersectionObserver, one-shot per element but scroll-scrubbed within) ----------
+const statEls = document.querySelectorAll('.stat');
+const counterState = new Map();
+statEls.forEach(el => counterState.set(el, false));
+
+function updateCounters(){
+  statEls.forEach(el => {
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    // progress of this element crossing the viewport
+    const p = clamp((vh - r.top) / (vh * 0.8), 0, 1);
+    const numEl = el.querySelector('.num');
+    const fillEl = el.querySelector('.bar-fill');
+    const target = parseFloat(numEl.dataset.target);
+    const val = Math.round(target * p);
+    numEl.textContent = val;
+    const max = parseFloat(fillEl.dataset.max);
+    fillEl.style.width = (Math.min(target,target) * p / max * 100) + '%';
+  });
+}
+
+// ---------- 8. svg draw ----------
+const drawPath = document.getElementById('drawPath');
+const drawObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) drawPath.classList.add('drawn');
+    else drawPath.classList.remove('drawn');
+  });
+}, { threshold: 0.4 });
+drawObserver.observe(drawPath);
+
+// ---------- master scroll loop ----------
+let ticking = false;
+function onScroll(){
+  if (!ticking){
+    requestAnimationFrame(() => {
+      updatePin();
+      updateHz();
+      updateParallax();
+      updateCounters();
+      updateRuler();
+      ticking = false;
+    });
+    ticking = true;
+  }
+}
+function updateRuler(){
+  let current = null;
+  sections.forEach(sec => {
+    if (!sec) return;
+    const r = sec.getBoundingClientRect();
+    if (r.top <= window.innerHeight * 0.5 && r.bottom >= window.innerHeight * 0.5){
+      current = sec.id;
+    }
+  });
+  ticks.forEach(t => t.classList.toggle('active', t.dataset.target === current));
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+onScroll();
+
+// ---------- 5. magnetic button ----------
+const magnetBtn = document.getElementById('magnetBtn');
+const magnetZone = document.querySelector('.magnet-zone');
+magnetZone.addEventListener('mousemove', (e) => {
+  const r = magnetBtn.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width/2);
+  const dy = e.clientY - (r.top + r.height/2);
+  const dist = Math.hypot(dx, dy);
+  const radius = 140;
+  if (dist < radius){
+    const strength = (1 - dist/radius) * 0.4;
+    magnetBtn.style.transform = `translate(${dx*strength}px, ${dy*strength}px)`;
+  } else {
+    magnetBtn.style.transform = 'translate(0,0)';
+  }
+});
+magnetZone.addEventListener('mouseleave', () => {
+  magnetBtn.style.transform = 'translate(0,0)';
+});
+
+// ---------- 6. tilt cards ----------
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', (e) => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    card.style.transform = `rotateY(${x*14}deg) rotateX(${-y*14}deg) translateZ(4px)`;
+    card.style.boxShadow = `0 12px 30px -10px rgba(0,0,0,0.5)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'rotateY(0) rotateX(0)';
+    card.style.boxShadow = 'none';
+  });
+});
+
+// ---------- 7. text scramble ----------
+const scrambleEl = document.getElementById('scrambleText');
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ01#$%_';
+let scrambleFrame = null;
+function scramble(el){
+  const finalText = el.dataset.text;
+  let iteration = 0;
+  clearInterval(scrambleFrame);
+  scrambleFrame = setInterval(() => {
+    el.textContent = finalText.split('').map((ch,i) => {
+      if (ch === ' ') return ' ';
+      if (i < iteration) return finalText[i];
+      return CHARS[Math.floor(Math.random()*CHARS.length)];
+    }).join('');
+    if (iteration >= finalText.length) clearInterval(scrambleFrame);
+    iteration += 1/2;
+  }, 30);
+}
+scrambleEl.addEventListener('mouseenter', () => scramble(scrambleEl));
+// ---------- 9. beams: pure SMIL, no JS needed ----------
+
+// ---------- 10. chat simulation ----------
+const chatPanel = document.getElementById('chatPanel');
+const chatQ = document.getElementById('chatQ');
+const chatCaret = document.getElementById('chatCaret');
+const chatTyping = document.getElementById('chatTyping');
+const chatA = document.getElementById('chatA');
+const payRows = chatA.querySelectorAll('.pay-row');
+let chatTimers = [], chatActive = false;
+
+function chatSched(fn, d){ chatTimers.push(setTimeout(fn, d)); }
+function chatReset(){
+  chatTimers.forEach(clearTimeout); chatTimers = [];
+  chatQ.textContent = '';
+  chatCaret.style.display = 'inline-block';
+  chatTyping.hidden = true;
+  chatA.hidden = true;
+  payRows.forEach(r => r.classList.remove('show'));
+}
+function chatPlay(){
+  chatReset();
+  const q = "who hasn't paid this month?";
+  q.split('').forEach((ch, i) => chatSched(() => { chatQ.textContent += ch; }, 500 + i * 45));
+  const tQ = 500 + q.length * 45;
+  chatSched(() => { chatCaret.style.display = 'none'; chatTyping.hidden = false; }, tQ + 300);
+  chatSched(() => { chatTyping.hidden = true; chatA.hidden = false; }, tQ + 1500);
+  payRows.forEach((r, i) => chatSched(() => r.classList.add('show'), tQ + 1800 + i * 350));
+  chatSched(chatPlay, tQ + 1800 + payRows.length * 350 + 4000);   // loop
+}
+new IntersectionObserver(entries => entries.forEach(e => {
+  if (e.isIntersecting && !chatActive){ chatActive = true; chatPlay(); }
+  else if (!e.isIntersecting && chatActive){ chatActive = false; chatReset(); }
+}), { threshold: 0.35 }).observe(chatPanel);
+
+// ---------- 11. bento spotlight ----------
+document.querySelectorAll('.bento-cell').forEach(cell => {
+  cell.addEventListener('mousemove', e => {
+    const r = cell.getBoundingClientRect();
+    cell.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    cell.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+});
+
+// ---------- 12. before/after slider ----------
+const baWrap = document.getElementById('baWrap');
+function baSet(x){
+  const r = baWrap.getBoundingClientRect();
+  const p = Math.min(0.94, Math.max(0.06, (x - r.left) / r.width));
+  baWrap.style.setProperty('--pos', (p * 100).toFixed(2) + '%');
+}
+let baDrag = false;
+baWrap.addEventListener('pointerdown', e => { baDrag = true; baWrap.setPointerCapture(e.pointerId); baSet(e.clientX); });
+baWrap.addEventListener('pointermove', e => { if (baDrag) baSet(e.clientX); });
+baWrap.addEventListener('pointerup',   () => { baDrag = false; });
+
+// ---------- 13. marquee: pure CSS, no JS needed ----------
+</script>
+
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KomKits — how a bill moves through the system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Public+Sans:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F6F3;
+    --surface:#FFFFFF;
+    --border:#DEDCD3;
+    --ink:#16150F;
+    --muted:#6E6C61;
+    --faint:#B9B7AB;
+    --accent:#16150F;
+    --accent-soft:#EFEEE7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Public Sans',sans-serif;
+    line-height:1.6;
+  }
+  .intro{
+    max-width:640px;
+    margin:0 auto;
+    padding:6rem 1.5rem 4rem;
+  }
+  .eyebrow{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin:0 0 0.9rem;
+  }
+  h1{
+    font-size:clamp(30px,4.6vw,42px);
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 1rem;
+    line-height:1.15;
+  }
+  p.lede{
+    color:var(--muted);
+    font-size:17px;
+    max-width:52ch;
+    margin:0;
+  }
+  .divider{
+    max-width:1080px;
+    margin:0 auto;
+    border:none;
+    border-top:1px solid var(--border);
+  }
+
+  .scrub-track{
+    display:grid;
+    grid-template-columns:0.9fr 1.1fr;
+    gap:2.5rem;
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 1.5rem;
+  }
+  .scrub-pinned{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+  }
+  .scrub-copy{ padding:10vh 0; }
+  .copy-step{
+    min-height:78vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    opacity:0.28;
+    transition:opacity 0.3s ease;
+  }
+  .copy-step.active{ opacity:1; }
+  .copy-step .tag{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:0 0 0.6rem;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .copy-step .tag .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--faint);
+    transition:background 0.3s ease;
+  }
+  .copy-step.active .tag .dot{ background:var(--ink); }
+  .copy-step h3{
+    font-size:21px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 0.6rem;
+  }
+  .copy-step p{
+    color:var(--muted);
+    font-size:15px;
+    margin:0;
+    max-width:40ch;
+  }
+  .copy-step p.note{
+    margin-top:0.6rem;
+    font-size:13px;
+    font-style:italic;
+    color:var(--faint);
+  }
+  @media (max-width:840px){
+    .scrub-track{ grid-template-columns:1fr; }
+    .scrub-pinned{ height:44vh; }
+  }
+
+  /* --- stack diagram --- */
+  .stack-stage{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .stack-layer{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:1.1rem 1.3rem;
+    opacity:0.4;
+    transform:scale(0.98);
+    transform-origin:left center;
+    transition:opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  }
+  .stack-layer.active{
+    opacity:1;
+    transform:scale(1);
+    border-color:var(--ink);
+    box-shadow:0 6px 18px rgba(22,21,15,0.08);
+  }
+  .stack-layer .row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .stack-layer .idx{
+    font-size:11px;
+    font-weight:600;
+    color:var(--faint);
+    letter-spacing:0.05em;
+  }
+  .stack-layer.active .idx{ color:var(--ink); }
+  .stack-layer .name{
+    font-size:16px;
+    font-weight:700;
+    margin-top:2px;
+  }
+  .stack-layer .detail{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:4px;
+    max-width:34ch;
+  }
+  .stack-connector{
+    display:flex;
+    justify-content:center;
+    height:14px;
+  }
+  .stack-connector svg{ display:block; }
+  .stack-connector path{
+    stroke:var(--faint);
+    stroke-width:2;
+    fill:none;
+    transition:stroke 0.3s ease;
+  }
+  .stack-connector.active path{ stroke:var(--ink); }
+
+  footer{
+    max-width:640px;
+    margin:0 auto;
+    padding:5rem 1.5rem 8rem;
+    color:var(--muted);
+    font-size:14px;
+  }
+  code.inline{
+    font-family:ui-monospace,monospace;
+    background:var(--accent-soft);
+    border:1px solid var(--border);
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <p class="eyebrow">Architecture · sample</p>
+  <h1>What happens between a sale and a filed return</h1>
+  <p class="lede">Five layers, one continuous pipeline. As you scroll, the stack lights up one layer at a time to show where a bill actually goes — same pinned-column mechanism as before, applied to a layered system diagram instead of a slider or a morph.</p>
+</div>
+
+<hr class="divider">
+
+<section class="scrub-section" id="demo-stack">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="stack-stage" id="stack-stage">
+        <div class="stack-layer" data-layer="0">
+          <div class="row"><span class="idx">LAYER 1</span></div>
+          <div class="name">Sale &amp; POS capture</div>
+          <div class="detail">Items, quantities, and customer are recorded at the counter or on an order.</div>
+        </div>
+        <div class="stack-connector" data-conn="0"><svg width="16" height="14"><path d="M8 0 L8 14 M3 9 L8 14 L13 9"/></svg></div>
+
+        <div class="stack-layer" data-layer="1">
+          <div class="row"><span class="idx">LAYER 2</span></div>
+          <div class="name">Discount engine</div>
+          <div class="detail">Line-item and header-level discounts are applied and sequenced.</div>
+        </div>
+        <div class="stack-connector" data-conn="1"><svg width="16" height="14"><path d="M8 0 L8 14 M3 9 L8 14 L13 9"/></svg></div>
+
+        <div class="stack-layer" data-layer="2">
+          <div class="row"><span class="idx">LAYER 3</span></div>
+          <div class="name">Tax engine</div>
+          <div class="detail">GST rates resolve per line, respecting inclusive or exclusive pricing.</div>
+        </div>
+        <div class="stack-connector" data-conn="2"><svg width="16" height="14"><path d="M8 0 L8 14 M3 9 L8 14 L13 9"/></svg></div>
+
+        <div class="stack-layer" data-layer="3">
+          <div class="row"><span class="idx">LAYER 4</span></div>
+          <div class="name">Invoice generation</div>
+          <div class="detail">A GST-compliant invoice is composed from the priced, taxed order.</div>
+        </div>
+        <div class="stack-connector" data-conn="3"><svg width="16" height="14"><path d="M8 0 L8 14 M3 9 L8 14 L13 9"/></svg></div>
+
+        <div class="stack-layer" data-layer="4">
+          <div class="row"><span class="idx">LAYER 5</span></div>
+          <div class="name">Filing &amp; reports</div>
+          <div class="detail">Totals roll up into GSTR-ready summaries and business reports.</div>
+        </div>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0">
+        <p class="tag"><span class="dot"></span>01 · Capture</p>
+        <h3>Every bill starts at the point of sale</h3>
+        <p>Whether it's rung up on the POS or entered as a sales order, the raw line items are the single source of truth for everything downstream.</p>
+      </div>
+      <div class="copy-step" data-step="1">
+        <p class="tag"><span class="dot"></span>02 · Discounting</p>
+        <h3>Discounts apply before tax touches the price</h3>
+        <p>Line-level discounts resolve first, then header-level ones — the order matters, because it changes the taxable value.</p>
+        <p class="note">This is the sequencing that trips up tax-inclusive pricing if it's done in the wrong order.</p>
+      </div>
+      <div class="copy-step" data-step="2">
+        <p class="tag"><span class="dot"></span>03 · Tax</p>
+        <h3>GST resolves per line, not per invoice</h3>
+        <p>Each line can carry its own rate and inclusive/exclusive behavior, so mixed-rate invoices still net out correctly.</p>
+      </div>
+      <div class="copy-step" data-step="3">
+        <p class="tag"><span class="dot"></span>04 · Invoicing</p>
+        <h3>The invoice is assembled, not typed</h3>
+        <p>By the time a template renders, every number on it — subtotal, discount, tax, total — has already been decided upstream.</p>
+      </div>
+      <div class="copy-step" data-step="4">
+        <p class="tag"><span class="dot"></span>05 · Filing</p>
+        <h3>Nothing is re-entered for the return</h3>
+        <p>The same figures that printed on the invoice are what roll up into the filing summary — one calculation, two destinations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<footer>
+  <h2 style="font-size:20px;font-weight:700;margin:0 0 0.5rem;">What this pattern is doing</h2>
+  <p>Same <code class="inline">sectionProgress()</code> function as the slider and morph samples — one scroll listener, one 0–1 value per section. Here it drives which <code class="inline">.stack-layer</code> gets the active class, so the diagram reads top-to-bottom as a real pipeline instead of an arbitrary set of steps. The numbered layers are justified this time: the sequence is the point, since discount-before-tax ordering is exactly the kind of thing worth making visually explicit.</p>
+</footer>
+
+<script>
+(function(){
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  function sectionProgress(section){
+    var rect = section.getBoundingClientRect();
+    var vh = window.innerHeight;
+    var total = rect.height - vh;
+    if(total <= 0) return 1;
+    return clamp(-rect.top / total, 0, 1);
+  }
+
+  var section = document.getElementById('demo-stack');
+  var copySteps = section.querySelectorAll('.copy-step');
+  var layers = section.querySelectorAll('.stack-layer');
+  var connectors = section.querySelectorAll('.stack-connector');
+
+  function render(progress){
+    var idx = clamp(Math.floor(progress * copySteps.length), 0, copySteps.length - 1);
+
+    copySteps.forEach(function(s,i){ s.classList.toggle('active', i === idx); });
+    layers.forEach(function(l,i){
+      l.classList.toggle('active', i === idx);
+    });
+    connectors.forEach(function(c,i){
+      c.classList.toggle('active', i < idx);
+    });
+  }
+
+  function onScroll(){
+    render(sectionProgress(section));
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(!ticking){
+      window.requestAnimationFrame(function(){ onScroll(); ticking = false; });
+      ticking = true;
+    }
+  });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,595 @@
+<style>
+  /* ================= 4c. virtual cursor card — "AI teammate" playable =================
+     A miniature but faithful KomKits sales-invoice draft: bill-to party, line items
+     with quantity steppers + live stock, real CGST/SGST split, and the actual
+     Draft → Unpaid → Paid lifecycle. Two cursors share the stage — the grey ghost
+     is the visitor (lerp-follows the real pointer), the green one is KomKits AI,
+     which watches the work and offers the next step. All rules scoped under .vc-card;
+     ids prefixed vc- where the landing page reuses them. */
+  .vc-card{width:500px;max-width:100%;border:1px solid var(--grey-200);border-radius:8px;background:var(--white);box-shadow:var(--shadow-z2);overflow:hidden}
+  .vc-stage{position:relative;background:var(--grey-100);border-bottom:1px solid var(--grey-200);padding:20px;min-height:430px;overflow:hidden;user-select:none;-webkit-user-select:none}
+  @media (hover:hover) and (pointer:fine){ .vc-stage{cursor:none} .vc-stage *{cursor:none} }
+  .vc-meta{padding:18px 20px 20px}
+  .vc-meta h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+  .vc-meta p{font-size:13.5px;color:var(--ink-500);margin-top:6px}
+
+  /* ---------- mini app: a real invoice draft ---------- */
+  .app{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;box-shadow:var(--shadow-z1);overflow:hidden}
+  .app-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--grey-200);background:var(--grey-50)}
+  .app-head .dot{width:7px;height:7px;border-radius:50%;background:var(--grey-200)}
+  .app-head .title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-400)}
+  .app-head .ref{margin-left:auto;font-size:11px;font-weight:700;color:var(--ink-500);font-variant-numeric:tabular-nums}
+
+  /* bill-to row */
+  .billto{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--grey-200)}
+  .billto .avatar{width:24px;height:24px;border-radius:50%;background:var(--grey-100);border:1px solid var(--grey-200);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-500)}
+  .billto .who{display:flex;flex-direction:column;line-height:1.25}
+  .billto .who b{font-size:12.5px;font-weight:600}
+  .billto .who small{font-size:10.5px;color:var(--ink-400)}
+  .billto .status{margin-left:auto}
+
+  .app-body{padding:10px 14px 14px}
+  .sect-label{display:flex;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-400);margin:4px 0 6px}
+  .sect-label .sku-h{margin-left:auto;font-weight:700}
+
+  .item-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--grey-200);font-size:13px}
+  .item-row .nm{display:flex;flex-direction:column;line-height:1.3}
+  .item-row .nm b{font-weight:600;font-size:13px}
+  .item-row .nm small{font-size:10.5px;color:var(--ink-400);font-variant-numeric:tabular-nums}
+  .item-row .nm small .stock{font-weight:700;color:var(--ink-500);transition:color .2s var(--ease)}
+  .item-row .nm small .stock.flash{color:var(--success)}
+  .item-row .nm small .stock.low{color:var(--warning)}
+  .item-row .nm small .stock.zero{color:var(--ink-400)}
+  .item-row.out{opacity:.55}
+  .item-row .amt{font-variant-numeric:tabular-nums;font-weight:700;min-width:62px;text-align:right;transition:transform .25s var(--ease)}
+  .item-row .amt.flash{transform:scale(1.12)}
+
+  /* quantity stepper — a real interactive control */
+  .qty{display:inline-flex;align-items:center;border:1px solid var(--grey-200);border-radius:var(--radius);background:var(--white);overflow:hidden}
+  .qty button{font:inherit;font-size:14px;font-weight:600;width:24px;height:26px;line-height:1;border:0;background:var(--white);color:var(--ink-700);
+    transition:background .12s var(--ease),color .12s var(--ease),transform .1s var(--ease)}
+  .qty button[disabled]{opacity:.35}
+  .qty .n{min-width:24px;text-align:center;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;border-left:1px solid var(--grey-200);border-right:1px solid var(--grey-200);height:26px;line-height:26px}
+  /* hover / press are driven by the GHOST cursor, not the real one */
+  .vhover.qbtn{background:var(--grey-100);color:var(--ink-900)}
+  .vhover.pay-btn,.vhover.reset-btn{border-color:var(--ink-900);background:var(--grey-100)}
+  .vpress,.qbtn.vpress{transform:scale(.9)}
+
+  /* totals block — real Sub Total / CGST / SGST / Grand Total */
+  .inv{margin-top:12px;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:6px;padding:10px 12px}
+  .tax-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:var(--ink-500)}
+  .tax-row .a{font-variant-numeric:tabular-nums}
+  .tax-row.muted{opacity:.5}
+  .vc-card .inv-tot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--grey-200);margin-top:6px;padding-top:8px;font-size:13.5px;font-weight:800;color:inherit}
+  .vc-card .inv-tot .a{font-variant-numeric:tabular-nums}
+  .inv-empty{font-size:12px;color:var(--ink-400);padding:10px 0 6px;text-align:center}
+
+  .inv-actions{display:flex;gap:8px;margin-top:12px}
+  .pay-btn,.reset-btn{font:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--radius);transition:border-color .15s var(--ease),background .15s var(--ease),transform .1s var(--ease)}
+  .pay-btn{flex:1;background:var(--ink-900);color:var(--white);border:1px solid var(--ink-900)}
+  .pay-btn[disabled]{opacity:.4}
+  .vhover.pay-btn{background:#26272B}
+  .reset-btn{background:var(--white);border:1px solid var(--grey-200);color:var(--ink-700)}
+
+  /* status chip lifecycle: Draft (grey) → Unpaid (info) → Paid (success) */
+  .vc-card .chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--grey-200);background:var(--grey-100);color:var(--ink-600,#52525B)}
+  .vc-card .chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .vc-card .chip.unpaid{background:var(--info-bg);border-color:var(--info-bd);color:var(--info)}
+  .vc-card .chip.paid{background:var(--success-bg);border-color:var(--success-bd);color:var(--success)}
+
+  /* ---------- the ghost cursor (visitor) ---------- */
+  .v-cursor{position:absolute;left:0;top:0;z-index:10;pointer-events:none;opacity:0;transition:opacity .25s var(--ease);will-change:transform}
+  .v-cursor svg{width:15px;height:15px;fill:var(--ink-900);filter:drop-shadow(0 1px 2px rgba(17,18,20,.35))}
+  .v-cursor .tag{position:absolute;left:11px;top:13px;background:var(--ink-900);color:var(--white);
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;transition:opacity .4s var(--ease)}
+  .v-cursor.quiet .tag{opacity:0}
+  .v-cursor.on{opacity:1}
+  .v-cursor .inner{transition:transform .12s var(--ease)}
+  .v-cursor.press .inner{transform:scale(.8)}
+  /* the AI teammate cursor — green is the reserved "AI feature" semantic */
+  .v-cursor.ai{opacity:1}
+  .v-cursor.ai svg{fill:var(--success)}
+  .v-cursor.ai .tag{background:var(--success);left:11px;top:-16px}
+  .v-cursor.ai.quiet .tag{opacity:0}
+  .v-cursor.ai.talking .tag{opacity:0}
+  .ai-bubble{position:absolute;left:0;top:0;z-index:11;font:inherit;font-size:11px;font-weight:600;
+    background:var(--white);border:1px solid var(--success-bd);color:var(--ink-900);
+    padding:5px 11px;border-radius:999px;box-shadow:var(--shadow-z1);white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .25s var(--ease);will-change:transform}
+  .ai-bubble::before{content:"";position:absolute;left:14px;top:-4px;width:7px;height:7px;background:inherit;border-left:inherit;border-top:inherit;transform:rotate(45deg)}
+  .ai-bubble.arrow-right::before{left:auto;right:14px}      /* bubble is left of cursor → arrow on its right */
+  .ai-bubble.below::before{top:auto;bottom:-4px;border-left:0;border-top:0;border-right:inherit;border-bottom:inherit}
+  .ai-bubble.on{opacity:1}
+  .ai-bubble.act{pointer-events:auto;border-color:var(--success);background:var(--success-bg);color:var(--success)}
+  .v-ripple{position:absolute;z-index:9;width:26px;height:26px;border-radius:50%;border:2px solid var(--ink-900);
+    pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  .v-ripple.go{animation:rip .45s var(--ease)}
+  .v-ripple.ai-rip{border-color:var(--success)}
+  @keyframes rip{0%{opacity:.5;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+
+  .vc-hint{position:absolute;right:14px;bottom:12px;font-size:11px;color:var(--ink-400);transition:opacity .4s var(--ease);background:var(--grey-100);padding:2px 6px;border-radius:4px}
+  .vc-hint.off{opacity:0}
+</style>
+
+<!-- ================= 4c. virtual cursor card — "AI teammate" playable ================= -->
+<section id="ai-teammate" style="padding-top:0">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">One more thing to poke</p>
+      <h2>Work alongside an AI teammate</h2>
+      <p class="lede">Move your mouse into the card. The grey cursor is you, raising a real KomKits invoice — the green one is KomKits AI, watching the work and offering the next step.</p>
+    </div>
+
+    <div class="vc-card" style="margin:44px auto 0">
+      <div class="vc-stage" id="vc-stage">
+        <div class="app" aria-label="Mini KomKits: build a sales invoice and settle it">
+          <div class="app-head">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="title">KomKits · New Sales Invoice</span>
+            <span class="ref" id="vc-ref">INV-2026-0042</span>
+          </div>
+
+          <div class="billto">
+            <span class="avatar">AT</span>
+            <span class="who"><b>Ananya Textiles</b><small>Karnataka · GSTIN 29AB···1Z5</small></span>
+            <span class="status"><span class="chip" id="vc-inv-chip"><span class="d"></span>Draft</span></span>
+          </div>
+
+          <div class="app-body">
+            <p class="sect-label">Items<span class="sku-h">Amount</span></p>
+
+            <div class="item-row" data-item="Cotton Saree" data-sku="SR-104" data-price="1450" data-stock="4" data-qty="0">
+              <span class="nm"><b>Cotton Saree</b><small>SR-104 · ₹1,450 · <span class="stock">4</span> in stock</small></span>
+              <span class="qty">
+                <button class="qbtn" data-act="dec" type="button" aria-label="decrease" disabled>−</button>
+                <span class="n">0</span>
+                <button class="qbtn" data-act="inc" type="button" aria-label="increase">+</button>
+              </span>
+              <span class="amt">₹0</span>
+            </div>
+
+            <div class="item-row" data-item="Silk Dupatta" data-sku="DP-221" data-price="899" data-stock="2" data-qty="0">
+              <span class="nm"><b>Silk Dupatta</b><small>DP-221 · ₹899 · <span class="stock">2</span> in stock</small></span>
+              <span class="qty">
+                <button class="qbtn" data-act="dec" type="button" aria-label="decrease" disabled>−</button>
+                <span class="n">0</span>
+                <button class="qbtn" data-act="inc" type="button" aria-label="increase">+</button>
+              </span>
+              <span class="amt">₹0</span>
+            </div>
+
+            <div class="item-row" data-item="Kurta Set" data-sku="KS-310" data-price="2100" data-stock="5" data-qty="0">
+              <span class="nm"><b>Kurta Set</b><small>KS-310 · ₹2,100 · <span class="stock">5</span> in stock</small></span>
+              <span class="qty">
+                <button class="qbtn" data-act="dec" type="button" aria-label="decrease" disabled>−</button>
+                <span class="n">0</span>
+                <button class="qbtn" data-act="inc" type="button" aria-label="increase">+</button>
+              </span>
+              <span class="amt">₹0</span>
+            </div>
+
+            <div class="inv">
+              <p class="inv-empty" id="vc-inv-empty">Add a quantity — GST calculates as you go</p>
+              <div id="vc-tax-block" hidden>
+                <div class="tax-row"><span>Sub Total</span><span class="a" id="vc-sub">₹0</span></div>
+                <div class="tax-row"><span>CGST 2.5%</span><span class="a" id="vc-cgst">₹0</span></div>
+                <div class="tax-row"><span>SGST 2.5%</span><span class="a" id="vc-sgst">₹0</span></div>
+                <div class="inv-tot"><span>Grand Total</span><span class="a" id="vc-inv-total">₹0</span></div>
+              </div>
+              <div class="inv-actions">
+                <button class="pay-btn" id="vc-pay-btn" data-act="primary" type="button" disabled>Create Invoice</button>
+                <button class="reset-btn" data-act="reset" type="button">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- the ghost (visitor) -->
+        <div class="v-cursor" id="vcur" aria-hidden="true">
+          <span class="inner" style="display:block">
+            <svg viewBox="0 0 24 24"><path d="M4 2l14 10-7 1-3 7z"/></svg>
+            <span class="tag">You</span>
+          </span>
+        </div>
+        <div class="v-ripple" id="vrip" aria-hidden="true"></div>
+
+        <!-- the AI teammate -->
+        <div class="v-cursor ai quiet" id="aicur" aria-hidden="true">
+          <span class="inner" style="display:block">
+            <svg viewBox="0 0 24 24"><path d="M4 2l14 10-7 1-3 7z"/></svg>
+            <span class="tag">KomKits AI</span>
+          </span>
+        </div>
+        <div class="v-ripple ai-rip" id="airip" aria-hidden="true"></div>
+        <button class="ai-bubble" id="aibubble" data-act="ai-do" type="button" tabindex="-1"></button>
+
+        <p class="vc-hint" id="vc-hint">watching the AI demo — move your mouse in to take over</p>
+      </div>
+
+      <div class="vc-meta">
+        <h3>Your hand — and an AI teammate</h3>
+        <p>You raise the invoice; KomKits AI splits the GST, flags low stock, and offers to record the payment — the same assist you get across the product.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ===== virtual cursor card: ghost cursor + AI teammate + AUTO-DEMO LOOP ===== */
+(function(){
+  const finePointer  = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const stage = document.getElementById('vc-stage');
+  const cur   = document.getElementById('vcur');
+  const rip   = document.getElementById('vrip');
+  const airip = document.getElementById('airip');
+  const hint  = document.getElementById('vc-hint');
+
+  /* ---------- ghost cursor: lerp-follow the real pointer ---------- */
+  const K = reduceMotion ? 1 : 0.14;      /* follow factor per frame — the delay */
+  let mx=0, my=0, vx=0, vy=0, inside=false, started=false;
+  let userTookOver = false;                /* true once the user has entered at least once */
+
+  if (finePointer){
+    stage.addEventListener('pointermove', e=>{
+      const r = stage.getBoundingClientRect();
+      mx = e.clientX - r.left; my = e.clientY - r.top;
+      if(!started){ started=true; vx=mx; vy=my; }
+      inside = true;
+    });
+    stage.addEventListener('pointerenter', ()=>{
+      inside=true; cur.classList.add('on');
+      if(!userTookOver){
+        userTookOver = true;
+        stopAutoDemo();
+        hint.classList.add('off');
+        setTimeout(()=>cur.classList.add('quiet'),4000);
+        /* AI hands the keyboard over and steps aside */
+        hush(); park();
+        say("All yours — I'll follow along", {ms:2400});
+      }
+    });
+    stage.addEventListener('pointerleave', ()=>{
+      inside=false; cur.classList.remove('on');
+      clearTimeout(idleT); hush();
+      scheduleAutoDemo(3000);
+    });
+    stage.addEventListener('pointerdown',  ()=>cur.classList.add('press'));
+    addEventListener('pointerup',          ()=>cur.classList.remove('press'));
+
+    let prevHover=null;
+    let lx=-1, ly=-1; /* last hit-tested ghost position */
+    (function frame(){
+      vx += (mx - vx) * K;
+      vy += (my - vy) * K;
+      if (Math.abs(mx-vx)<.4 && Math.abs(my-vy)<.4){ vx=mx; vy=my; }
+      cur.style.transform = `translate(${vx}px,${vy}px)`;
+      if (Math.abs(vx-lx)>.5 || Math.abs(vy-ly)>.5){
+        lx=vx; ly=vy;
+        const el = ghostTarget();
+        const hit = el && el.closest('[data-act]');
+        if (hit !== prevHover){
+          if (prevHover) prevHover.classList.remove('vhover');
+          if (hit && !hit.disabled) hit.classList.add('vhover');
+          prevHover = hit;
+        }
+      }
+      requestAnimationFrame(frame);
+    })();
+    stage.addEventListener('pointercancel', ()=>{ inside=false; cur.classList.remove('on','press'); });
+  }
+
+  function ghostTarget(){
+    const r = stage.getBoundingClientRect();
+    return document.elementFromPoint(r.left + vx, r.top + vy);
+  }
+
+  /* ---------- clicks: resolved at the ghost's position ---------- */
+  stage.addEventListener('click', e=>{
+    let hit;
+    if (finePointer && e.detail !== 0){
+      const el = ghostTarget();
+      hit = el && el.closest('[data-act]');
+      e.preventDefault(); e.stopPropagation();
+      ripple(rip, vx, vy);
+      if (hit && !hit.disabled){ hit.classList.add('vpress'); setTimeout(()=>hit.classList.remove('vpress'),120); }
+    } else {
+      hit = e.target.closest && e.target.closest('[data-act]');
+    }
+    if (hit && !hit.disabled) run(hit);
+  }, true);
+
+  function ripple(el,x,y){
+    el.style.left=x+'px'; el.style.top=y+'px';
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  }
+
+  /* ---------- the mini invoice app ---------- */
+  const emptyEl = document.getElementById('vc-inv-empty');
+  const taxBlock= document.getElementById('vc-tax-block');
+  const subEl   = document.getElementById('vc-sub');
+  const cgstEl  = document.getElementById('vc-cgst');
+  const sgstEl  = document.getElementById('vc-sgst');
+  const totalEl = document.getElementById('vc-inv-total');
+  const chipEl  = document.getElementById('vc-inv-chip');
+  const payBtn  = document.getElementById('vc-pay-btn');
+  const rows    = [...stage.querySelectorAll('.item-row')];
+  const GST = 0.05;                       /* 5% split as CGST 2.5 + SGST 2.5 */
+  const inr = (n,dec=0) => '₹' + Number(n).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  let created = false, paid = false, prevGrand = 0;
+
+  function subtotal(){ return rows.reduce((s,r)=> s + (+r.dataset.qty)*(+r.dataset.price), 0); }
+  function lineCount(){ return rows.reduce((n,r)=> n + (+r.dataset.qty>0?1:0), 0); }
+
+  function tickTotal(from, to){
+    if (reduceMotion || from===to){ totalEl.textContent = inr(to,2); return; }
+    const t0 = performance.now();
+    (function f(now){
+      const p = Math.min(1,(now-t0)/380);
+      totalEl.textContent = inr(from + (to-from)*(1-Math.pow(1-p,3)), 2);
+      if (p<1) requestAnimationFrame(f);
+    })(t0);
+  }
+
+  function renderRow(row){
+    const qty = +row.dataset.qty, price = +row.dataset.price;
+    const initStock = +row.dataset.stock, left = initStock - qty;
+    row.querySelector('.n').textContent = qty;
+    const amtEl = row.querySelector('.amt');
+    amtEl.textContent = inr(qty*price);
+    amtEl.classList.add('flash'); setTimeout(()=>amtEl.classList.remove('flash'),260);
+    const stockEl = row.querySelector('.stock');
+    stockEl.textContent = left;
+    stockEl.className = 'stock' + (left===0 ? ' zero' : left<=1 ? ' low' : '');
+    stockEl.classList.add('flash'); setTimeout(()=>stockEl.classList.remove('flash'),320);
+    row.classList.toggle('out', left===0);
+    const inc = row.querySelector('[data-act="inc"]');
+    const dec = row.querySelector('[data-act="dec"]');
+    inc.disabled = left===0 || created;
+    dec.disabled = qty===0 || created;
+    if (inc.disabled) inc.classList.remove('vhover');
+    if (dec.disabled) dec.classList.remove('vhover');
+  }
+
+  function recalc(animate){
+    const sub = subtotal(), tax = sub*GST, grand = sub + tax;
+    const has = lineCount()>0;
+    emptyEl.hidden = has; taxBlock.hidden = !has;
+    subEl.textContent  = inr(sub);
+    cgstEl.textContent = inr(tax/2, 2);
+    sgstEl.textContent = inr(tax/2, 2);
+    if (animate) tickTotal(prevGrand, grand); else totalEl.textContent = inr(grand,2);
+    prevGrand = grand;
+    payBtn.disabled = (!has && !created) || paid;
+    return {sub, tax, grand};
+  }
+
+  function setStatus(cls, label){
+    chipEl.className = 'chip' + (cls?(' '+cls):'');
+    chipEl.innerHTML = '<span class="d"></span>' + label;
+  }
+
+  function resetApp(){
+    rows.forEach(r=>{ r.dataset.qty='0'; renderRow(r); });
+    created=false; paid=false; prevGrand=0;
+    setStatus('', 'Draft');
+    payBtn.textContent='Create Invoice'; payBtn.disabled=true;
+    recalc(false);
+    clearTimeout(idleT); hush(); park();
+  }
+
+  function run(btn){
+    const act = btn.dataset.act;
+
+    if (act==='ai-do'){                       /* AI presses whatever the primary offers */
+      if (payBtn.disabled) return;
+      aiCur.classList.add('press'); setTimeout(()=>aiCur.classList.remove('press'),180);
+      hush(); ripple(airip, ax, ay);
+      run(payBtn);
+      return;
+    }
+
+    if (act==='inc' || act==='dec'){
+      if (created) return;
+      const row = btn.closest('.item-row');
+      let qty = +row.dataset.qty;
+      const left = (+row.dataset.stock) - qty;
+      if (act==='inc'){ if (left<=0) return; qty++; }
+      else { if (qty<=0) return; qty--; }
+      row.dataset.qty = qty;
+      renderRow(row);
+      const {grand} = recalc(true);
+      if(!autoPlaying){
+        const newLeft = (+row.dataset.stock) - qty;
+        const nm = row.dataset.item, sku = row.dataset.sku;
+        aiGo(...anchor(row, 'right'), ()=>{
+          if (act==='inc' && newLeft===0) say(sku+' just hit zero — reorder?', {ms:2400, act:false});
+          else if (act==='inc' && newLeft<=1) say('Only '+newLeft+' '+sku+' left after this', {ms:2200});
+          else if (act==='inc' && lineCount()===1) say('GST auto-split: CGST + SGST', {ms:2200});
+          else say('Line updated ✓', {ms:1300});
+        });
+        armIdle();
+      }
+      return;
+    }
+
+    if (act==='primary'){
+      if (payBtn.disabled) return;
+      if (!created){                          /* Draft → create → Unpaid */
+        created = true;
+        rows.forEach(renderRow);              /* lock steppers */
+        setStatus('unpaid', 'Unpaid');
+        payBtn.textContent='Record payment'; payBtn.disabled=false;
+        recalc(false);
+        clearTimeout(idleT); hush();
+        if(!autoPlaying){
+          aiGo(...anchor(document.getElementById('vc-ref'), 'below'), ()=>{
+            say('Sent to Ananya Textiles — record payment?', {ms:2600});
+            armIdle();
+          });
+        }
+      } else if (!paid){                      /* Unpaid → pay → Paid */
+        paid = true;
+        setStatus('paid', 'Paid');
+        payBtn.textContent='Payment recorded ✓'; payBtn.disabled=true;
+        clearTimeout(idleT); hush();
+        if(!autoPlaying){
+          aiGo(...anchor(chipEl, 'left'), ()=>{ say('Paid & reconciled to bank ✓', {ms:2400}); setTimeout(park,2500); });
+        }
+      }
+      return;
+    }
+
+    if (act==='reset') resetApp();
+  }
+
+  /* ---------- AI teammate cursor: watches, reacts, offers the next step ---------- */
+  const aiCur = document.getElementById('aicur');
+  const aiBub = document.getElementById('aibubble');
+  const AIK = reduceMotion ? 1 : 0.08;     /* slower, calmer than the ghost */
+  let ax=0, ay=0, atx=0, aty=0, aiArrive=null, idleT=null;
+
+  /* anchor near an element without covering it: side ∈ right|left|below|above */
+  function anchor(el, side='right'){
+    const r=el.getBoundingClientRect(), s=stage.getBoundingClientRect();
+    const cx=r.left-s.left, cy=r.top-s.top;
+    if (side==='right')  return [cx+r.width+8,  cy+r.height/2-4];
+    if (side==='left')   return [cx-14,          cy+r.height/2-4];
+    if (side==='below')  return [cx+r.width/2-8, cy+r.height+4];
+    return [cx+r.width/2-8, cy-18]; /* above */
+  }
+  function aiGo(x,y,cb){ atx=x; aty=y; aiArrive=cb||null; }
+  function park(){ aiGo(stage.clientWidth-52, 40); }  /* identity carried by the green bubble, not a tag over content */
+  function say(txt, opts={}){
+    aiBub.textContent=txt;
+    aiBub.classList.add('on'); aiBub.classList.toggle('act', !!opts.act);
+    aiCur.classList.add('talking');
+    clearTimeout(say.t);
+    if(!opts.hold) say.t=setTimeout(hush, opts.ms||1600);
+  }
+  function hush(){ aiBub.classList.remove('on','act'); aiCur.classList.remove('talking'); }
+  function armIdle(){
+    clearTimeout(idleT);
+    idleT=setTimeout(()=>{
+      if (inside || autoPlaying || paid) return;
+      if (!created && lineCount()>0){
+        const [x,y]=anchor(payBtn,'above');
+        aiGo(x,y, ()=>say('Ready — shall I raise it? Click me', {hold:true, act:true}));
+      } else if (created && !paid){
+        const [x,y]=anchor(payBtn,'above');
+        aiGo(x,y, ()=>say('Record the payment? Click me', {hold:true, act:true}));
+      }
+    }, 3800);
+  }
+  (function aiFrame(){
+    ax += (atx-ax)*AIK; ay += (aty-ay)*AIK;
+    aiCur.style.transform = `translate(${ax}px,${ay}px)`;
+    /* bubble sits above the cursor and away from the stepper column: when the cursor is
+       on the right (over controls) it extends LEFT over the name area; else it extends right.
+       Flips below only near the very top. Always clamped inside the stage. */
+    const bw=aiBub.offsetWidth||140;
+    const rightSide = ax > stage.clientWidth*0.5;
+    let bx = rightSide ? ax-bw-4 : ax+8;
+    let by=ay-40, below=false;
+    if (ay < 52){ by = ay+26; below=true; }
+    bx = Math.max(8, Math.min(bx, stage.clientWidth-bw-8));
+    aiBub.classList.toggle('below', below);
+    /* arrow points back toward the cursor: right edge when the bubble is left of it */
+    aiBub.classList.toggle('arrow-right', rightSide);
+    aiBub.style.transform = `translate(${bx}px,${by}px)`;
+    if (aiArrive && Math.abs(atx-ax)<2 && Math.abs(aty-ay)<2){ const f=aiArrive; aiArrive=null; f(); }
+    requestAnimationFrame(aiFrame);
+  })();
+  ax = atx = stage.clientWidth-52; ay = aty = 40;  /* start parked, top-right */
+
+  recalc(false);
+
+  /* ================================================================
+     AUTO-DEMO LOOP — plays by default, pauses when user enters
+     ================================================================ */
+  let autoPlaying = false;
+  let autoTimers = [];
+  let autoDemoTimeout = null;
+
+  function autoT(fn, ms){
+    const id = setTimeout(fn, reduceMotion ? 0 : ms);
+    autoTimers.push(id);
+    return id;
+  }
+  function stopAutoDemo(){
+    autoPlaying = false;
+    autoTimers.forEach(clearTimeout); autoTimers = [];
+    clearTimeout(autoDemoTimeout); autoDemoTimeout = null;
+  }
+  function scheduleAutoDemo(delay){
+    clearTimeout(autoDemoTimeout);
+    autoDemoTimeout = setTimeout(()=>{ if(!inside) startAutoDemo(); }, delay);
+  }
+
+  /* AI clicks a real control: move to it, press, ripple, run it. */
+  function aiClick(el, arriveMsg, msMsg){
+    return new Promise(res=>{
+      const [x,y]=anchor(el,'left');
+      aiGo(x,y, ()=>{
+        if(!autoPlaying) return res();
+        aiCur.classList.add('press'); setTimeout(()=>aiCur.classList.remove('press'),180);
+        el.classList.add('vpress'); setTimeout(()=>el.classList.remove('vpress'),140);
+        ripple(airip, ax, ay);
+        run(el);
+        if (arriveMsg) say(arriveMsg, {ms:msMsg||1500});
+        res();
+      });
+    });
+  }
+
+  function startAutoDemo(){
+    if(inside || reduceMotion) return;
+    resetApp();
+    autoPlaying = true;
+    let t = 700;
+
+    autoT(()=>{ if(autoPlaying) say('Watch — a quick sales invoice', {ms:2200}); }, t); t += 2500;
+
+    /* +2 Cotton Saree */
+    autoT(()=>{ if(autoPlaying) aiClick(rows[0].querySelector('[data-act="inc"]'), 'Cotton Saree ×1', 1300); }, t); t += 1500;
+    autoT(()=>{ if(autoPlaying) aiClick(rows[0].querySelector('[data-act="inc"]'), 'Make it two', 1300); }, t); t += 1800;
+
+    /* +2 Silk Dupatta → drives stock to 0 */
+    autoT(()=>{ if(autoPlaying) aiClick(rows[1].querySelector('[data-act="inc"]'), 'Silk Dupatta added', 1300); }, t); t += 1600;
+    autoT(()=>{ if(autoPlaying) aiClick(rows[1].querySelector('[data-act="inc"]'), 'DP-221 is out now — I\'d reorder', 2200); }, t); t += 2600;
+
+    /* comment on the GST split */
+    autoT(()=>{ if(!autoPlaying) return; const [x,y]=anchor(cgstEl,'left'); aiGo(x,y, ()=>say('CGST + SGST split automatically', {ms:2200})); }, t); t += 2700;
+
+    /* create the invoice */
+    autoT(()=>{ if(autoPlaying) aiClick(payBtn, null, 0); }, t); t += 2400;
+
+    /* record the payment */
+    autoT(()=>{ if(autoPlaying) aiClick(payBtn, 'Paid & reconciled ✓', 2200); }, t); t += 3000;
+
+    /* hand over */
+    autoT(()=>{ if(!autoPlaying) return; park(); say('Your turn — move your mouse in', {ms:2600}); }, t); t += 3400;
+
+    /* reset + loop */
+    autoT(()=>{
+      if(!autoPlaying) return;
+      hush(); resetApp();
+      autoT(()=>{ if(autoPlaying) startAutoDemo(); }, 1400);
+    }, t);
+  }
+
+  /* --- kick off auto-demo when section scrolls into view --- */
+  if (!reduceMotion){
+    const observer = new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting && !inside && !autoPlaying){
+          scheduleAutoDemo(600);
+        } else if(!entry.isIntersecting){
+          stopAutoDemo(); resetApp();
+        }
+      });
+    }, {threshold:0.3});
+    observer.observe(stage);
+  }
+})();
+</script>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll-scrub samples — set 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF6;
+    --surface:#FFFFFF;
+    --border:#E4E2DA;
+    --ink:#1C1B18;
+    --muted:#8A8776;
+    --indigo:#3B4CC0;
+    --indigo-dim:#E7E9FA;
+    --ochre:#C98A2E;
+    --ochre-dim:#F6E9D3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+  }
+  .intro, .outro{
+    max-width:640px;
+    margin:0 auto;
+    padding:6rem 1.5rem;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--indigo);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:0 0 0.75rem;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-size:clamp(30px,5vw,44px);
+    font-weight:600;
+    margin:0 0 1rem;
+    line-height:1.15;
+  }
+  h2{
+    font-family:'Fraunces',serif;
+    font-size:24px;
+    font-weight:600;
+    margin:0 0 0.5rem;
+  }
+  p.lede{
+    color:var(--muted);
+    font-size:17px;
+    max-width:56ch;
+  }
+  .divider{
+    max-width:640px;
+    margin:0 auto;
+    border:none;
+    border-top:1px solid var(--border);
+  }
+
+  .scrub-track{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:3rem;
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 1.5rem;
+  }
+  .scrub-pinned{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+  }
+  .scrub-copy{ padding:8vh 0; }
+  .copy-step{
+    min-height:70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    opacity:0.3;
+    transition:opacity 0.3s ease;
+  }
+  .copy-step.active{ opacity:1; }
+  .copy-step .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--indigo);
+    margin:0 0 0.5rem;
+  }
+  .copy-step h3{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 0.5rem;
+  }
+  .copy-step p{
+    color:var(--muted);
+    font-size:15px;
+    margin:0;
+    max-width:38ch;
+  }
+  @media (max-width:840px){
+    .scrub-track{ grid-template-columns:1fr; }
+    .scrub-pinned{ height:46vh; }
+  }
+
+  .device-stage{
+    position:relative;
+    width:100%;
+    height:420px;
+  }
+  .device{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:140px;
+    height:280px;
+    border-radius:22px;
+    background:var(--ink);
+  }
+  .device::after{
+    content:'';
+    position:absolute;
+    inset:8px;
+    border-radius:16px;
+    background:var(--indigo);
+    opacity:0.15;
+  }
+  .spec-rail{
+    position:absolute;
+    top:50%;
+    left:0;
+    width:100%;
+    transform:translateY(-50%);
+    display:flex;
+    will-change:transform;
+  }
+  .spec-card{
+    flex:0 0 auto;
+    width:220px;
+    margin-right:24px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:1rem 1.25rem;
+  }
+  .spec-card:first-child{ margin-left:0; }
+  .spec-card .k{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--indigo);
+    text-transform:uppercase;
+  }
+  .spec-card .v{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    font-weight:600;
+    margin-top:4px;
+  }
+
+  .morph-stage{
+    width:100%;
+    display:flex;
+    justify-content:center;
+  }
+  .morph-svg{ width:220px; height:220px; }
+  .morph-shape{
+    fill:var(--ochre-dim);
+    stroke:var(--ochre);
+    stroke-width:2;
+  }
+
+  .frame-stage{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:2rem;
+    display:flex;
+    justify-content:center;
+  }
+
+  footer{
+    max-width:640px;
+    margin:0 auto;
+    padding:5rem 1.5rem 8rem;
+    color:var(--muted);
+    font-size:14px;
+  }
+  code.inline{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:13px;
+    color:var(--indigo);
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <p class="eyebrow">Pattern samples · set 2</p>
+  <h1>Three more scroll-scrub flavors</h1>
+  <p class="lede">Same underlying mechanism as before — one progress value per section drives everything — but applied to different visual moves this time: a horizontal slide, a shape that morphs, and a scrubbed frame sequence.</p>
+</div>
+
+<hr class="divider">
+
+<section class="scrub-section" id="demo-slider">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="device-stage">
+        <div class="device"></div>
+        <div class="spec-rail" id="spec-rail">
+          <div class="spec-card"><div class="k">Display</div><div class="v">6.3" OLED</div></div>
+          <div class="spec-card"><div class="k">Battery</div><div class="v">28 hrs</div></div>
+          <div class="spec-card"><div class="k">Storage</div><div class="v">1 TB</div></div>
+          <div class="spec-card"><div class="k">Weight</div><div class="v">168 g</div></div>
+          <div class="spec-card"><div class="k">Chip</div><div class="v">4nm neural</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0"><p class="tag">01</p><h3>The device stays put</h3><p>It never moves. Vertical scroll is translated into horizontal motion for a second element underneath it.</p></div>
+      <div class="copy-step" data-step="1"><p class="tag">02</p><h3>Specs slide past</h3><p>Each card is positioned in a row; the row's <code class="inline">translateX</code> is set directly from scroll progress.</p></div>
+      <div class="copy-step" data-step="2"><p class="tag">03</p><h3>No scroll-snap needed</h3><p>Because it's continuous, not stepped, it stays buttery on trackpads and reverses cleanly on scroll-up.</p></div>
+      <div class="copy-step" data-step="3"><p class="tag">04</p><h3>Last card settles</h3><p>The rail runs out of distance right as the section's scroll budget ends, so the last spec lands centered.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="scrub-section" id="demo-morph">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="morph-stage">
+        <svg class="morph-svg" viewBox="0 0 200 200">
+          <path class="morph-shape" id="morph-path" d=""/>
+        </svg>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0"><p class="tag">Shape 1</p><h3>Circle</h3><p>The path data for a circle, expressed as an SVG path string.</p></div>
+      <div class="copy-step" data-step="1"><p class="tag">Shape 2</p><h3>Square</h3><p>Interpolating between two path strings point-by-point gives a true morph, not a crossfade.</p></div>
+      <div class="copy-step" data-step="2"><p class="tag">Shape 3</p><h3>Diamond</h3><p>As long as both paths have the same number of points, linear interpolation between their coordinates works.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="scrub-section" id="demo-frames">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="frame-stage">
+        <canvas id="frame-canvas" width="280" height="280"></canvas>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0"><p class="tag">Frame 0</p><h3>A sequence, not a video</h3><p>This is the technique behind product-rotation scrubs — dozens of still frames, stepped through by scroll position instead of played on a timer.</p></div>
+      <div class="copy-step" data-step="1"><p class="tag">Mid sequence</p><h3>Canvas draws the current frame</h3><p>Here it's a simple generated rotation; in production it'd be a pre-rendered image sequence loaded upfront.</p></div>
+      <div class="copy-step" data-step="2"><p class="tag">Final frame</p><h3>Scroll speed = playback speed</h3><p>Scroll fast, it flips through frames fast. Scroll slow, you can inspect every one. That coupling is the whole appeal.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<footer>
+  <h2>What changed from set 1</h2>
+  <p>The scaffold is identical — a tall section, a sticky left column, a scroll listener computing one progress value. What differs is what that value drives: a <code class="inline">translateX</code> on a row of cards, a per-point linear interpolation between two path strings, or an index into a frame array drawn to canvas. Once you have the progress number, almost any visual property can be bound to it.</p>
+</footer>
+
+<div class="outro">
+  <p class="eyebrow">End of set 2</p>
+  <h2>Pick a direction</h2>
+  <p class="lede">Horizontal slide, shape morph, frame scrub, or one of the three from the first set — tell me which one and I'll adapt it to your actual content.</p>
+</div>
+
+<script>
+(function(){
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  function sectionProgress(section){
+    var rect = section.getBoundingClientRect();
+    var vh = window.innerHeight;
+    var total = rect.height - vh;
+    if(total <= 0) return 1;
+    return clamp(-rect.top / total, 0, 1);
+  }
+
+  function setActiveStep(section, progress){
+    var steps = section.querySelectorAll('.copy-step');
+    var idx = clamp(Math.floor(progress * steps.length), 0, steps.length - 1);
+    steps.forEach(function(s,i){ s.classList.toggle('active', i === idx); });
+  }
+
+  var sliderSection = document.getElementById('demo-slider');
+  var rail = document.getElementById('spec-rail');
+  function renderSlider(progress){
+    var railWidth = rail.scrollWidth;
+    var viewportWidth = window.innerWidth > 840 ? sliderSection.querySelector('.device-stage').clientWidth : window.innerWidth;
+    var maxShift = Math.max(0, railWidth - viewportWidth * 0.6);
+    var x = progress * maxShift;
+    rail.style.transform = 'translateY(-50%) translateX(' + (-x) + 'px)';
+  }
+
+  var morphSection = document.getElementById('demo-morph');
+  var morphPath = document.getElementById('morph-path');
+  function pointsOnCircle(cx,cy,r,n){
+    var pts = [];
+    for(var i=0;i<n;i++){
+      var a = (i/n) * Math.PI * 2 - Math.PI/2;
+      pts.push([cx + r*Math.cos(a), cy + r*Math.sin(a)]);
+    }
+    return pts;
+  }
+  function pointsOnPolygon(cx,cy,r,n,corners){
+    var pts = [];
+    for(var i=0;i<n;i++){
+      var t = (i/n) * corners.length;
+      var seg = Math.floor(t) % corners.length;
+      var f = t - Math.floor(t);
+      var a = corners[seg], b = corners[(seg+1)%corners.length];
+      pts.push([a[0] + (b[0]-a[0])*f, a[1] + (b[1]-a[1])*f]);
+    }
+    return pts;
+  }
+  var N = 24;
+  var circlePts = pointsOnCircle(100,100,70,N);
+  var squarePts = pointsOnPolygon(100,100,65,N,[[35,35],[165,35],[165,165],[35,165]]);
+  var diamondPts = pointsOnPolygon(100,100,85,N,[[100,15],[185,100],[100,185],[15,100]]);
+  function lerpPts(a,b,t){
+    var out = [];
+    for(var i=0;i<a.length;i++){
+      out.push([ a[i][0]+(b[i][0]-a[i][0])*t, a[i][1]+(b[i][1]-a[i][1])*t ]);
+    }
+    return out;
+  }
+  function ptsToPath(pts){
+    return 'M ' + pts.map(function(p){ return p[0].toFixed(1)+' '+p[1].toFixed(1); }).join(' L ') + ' Z';
+  }
+  function renderMorph(progress){
+    var p = progress * 2;
+    var pts;
+    if(p <= 1){ pts = lerpPts(circlePts, squarePts, clamp(p,0,1)); }
+    else { pts = lerpPts(squarePts, diamondPts, clamp(p-1,0,1)); }
+    morphPath.setAttribute('d', ptsToPath(pts));
+  }
+
+  var framesSection = document.getElementById('demo-frames');
+  var canvas = document.getElementById('frame-canvas');
+  var ctx = canvas.getContext('2d');
+  var totalFrames = 40;
+  function drawFrame(frameIndex){
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    var angle = (frameIndex / totalFrames) * Math.PI * 2;
+    ctx.save();
+    ctx.translate(w/2, h/2);
+    ctx.rotate(angle);
+    ctx.strokeStyle = '#C98A2E';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-60,-60,120,120);
+    ctx.beginPath();
+    ctx.moveTo(-60,-60);
+    ctx.lineTo(60,60);
+    ctx.moveTo(60,-60);
+    ctx.lineTo(-60,60);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#8A8776';
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.fillText('frame ' + frameIndex + ' / ' + totalFrames, 12, h - 14);
+  }
+  function renderFrames(progress){
+    var idx = clamp(Math.round(progress * totalFrames), 0, totalFrames);
+    drawFrame(idx);
+  }
+
+  function onScroll(){
+    var p1 = sectionProgress(sliderSection);
+    setActiveStep(sliderSection, p1);
+    renderSlider(p1);
+
+    var p2 = sectionProgress(morphSection);
+    setActiveStep(morphSection, p2);
+    renderMorph(p2);
+
+    var p3 = sectionProgress(framesSection);
+    setActiveStep(framesSection, p3);
+    renderFrames(p3);
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(!ticking){
+      window.requestAnimationFrame(function(){ onScroll(); ticking = false; });
+      ticking = true;
+    }
+  });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

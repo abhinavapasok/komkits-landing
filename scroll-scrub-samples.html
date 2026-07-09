@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll-scrub samples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --surface:#131720;
+    --surface-2:#1A2030;
+    --border:#232A3B;
+    --text:#E6E9EF;
+    --muted:#7C8598;
+    --teal:#4CD9C0;
+    --teal-dim:#1F5148;
+    --amber:#F5A623;
+    --coral:#E8654A;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:auto;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+  }
+  .intro, .outro{
+    max-width:640px;
+    margin:0 auto;
+    padding:6rem 1.5rem;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--teal);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:0 0 0.75rem;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(28px,5vw,42px);
+    font-weight:700;
+    margin:0 0 1rem;
+    line-height:1.15;
+  }
+  h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:22px;
+    font-weight:500;
+    margin:0 0 0.5rem;
+  }
+  p.lede{
+    color:var(--muted);
+    font-size:17px;
+    max-width:56ch;
+  }
+  .divider{
+    max-width:640px;
+    margin:0 auto;
+    border:none;
+    border-top:1px solid var(--border);
+  }
+
+  /* ---------- shared scroll-scrub scaffold ---------- */
+  .scrub-section{
+    position:relative;
+  }
+  .scrub-track{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:3rem;
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 1.5rem;
+  }
+  .scrub-pinned{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+  }
+  .scrub-copy{
+    padding:8vh 0;
+  }
+  .copy-step{
+    min-height:70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    opacity:0.25;
+    transition:opacity 0.3s ease;
+  }
+  .copy-step.active{ opacity:1; }
+  .copy-step .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--teal);
+    margin:0 0 0.5rem;
+  }
+  .copy-step h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:19px;
+    font-weight:500;
+    margin:0 0 0.5rem;
+  }
+  .copy-step p{
+    color:var(--muted);
+    font-size:15px;
+    margin:0;
+    max-width:38ch;
+  }
+
+  @media (max-width:840px){
+    .scrub-track{ grid-template-columns:1fr; }
+    .scrub-pinned{ height:50vh; top:0; }
+  }
+
+  /* ---------- demo 1: diagram nodes lighting up ---------- */
+  .diagram-card{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:2rem;
+  }
+  .node{
+    fill:var(--surface-2);
+    stroke:var(--border);
+    stroke-width:1;
+    transition:fill 0.35s ease, stroke 0.35s ease;
+  }
+  .node.lit{
+    fill:var(--teal-dim);
+    stroke:var(--teal);
+  }
+  .node-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    fill:var(--muted);
+    transition:fill 0.35s ease;
+  }
+  .node-label.lit{ fill:var(--teal); }
+  .edge{
+    stroke:var(--border);
+    stroke-width:1.5;
+    fill:none;
+  }
+  .edge.lit{
+    stroke:var(--teal);
+    stroke-dasharray:6 4;
+    animation:dash 1s linear infinite;
+  }
+  @keyframes dash{ to{ stroke-dashoffset:-20; } }
+
+  /* ---------- demo 2: code typing ---------- */
+  .code-card{
+    width:100%;
+    background:#0D1117;
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .code-topbar{
+    display:flex;
+    gap:6px;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .dot{ width:10px; height:10px; border-radius:50%; background:var(--border); }
+  .code-body{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:1.5rem;
+    white-space:pre;
+    min-height:220px;
+    color:#C9D1D9;
+  }
+  .code-body .kw{ color:var(--coral); }
+  .code-body .str{ color:var(--teal); }
+  .code-body .com{ color:var(--muted); }
+  .cursor{
+    display:inline-block;
+    width:7px;
+    height:15px;
+    background:var(--teal);
+    vertical-align:middle;
+    animation:blink 1s step-end infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- demo 3: stat morph ---------- */
+  .stat-card{
+    width:100%;
+    text-align:left;
+  }
+  .stat-number{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(48px,8vw,88px);
+    font-weight:700;
+    color:var(--teal);
+    line-height:1;
+    margin:0 0 0.5rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat-unit{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  .progress-rail{
+    margin-top:2rem;
+    height:2px;
+    background:var(--border);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:var(--teal);
+  }
+
+  footer{
+    max-width:640px;
+    margin:0 auto;
+    padding:5rem 1.5rem 8rem;
+    color:var(--muted);
+    font-size:14px;
+  }
+  code.inline{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--surface);
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:13px;
+    color:var(--teal);
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <p class="eyebrow">Pattern samples · 01 / 03</p>
+  <h1>Sticky-scroll, scrubbed by hand</h1>
+  <p class="lede">Three variants of the same trick: pin an element with <code class="inline">position: sticky</code>, then drive its state from scroll progress instead of a one-shot "fade in when visible" trigger. Scroll down slowly to see each one react.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ================= DEMO 1: diagram lighting up ================= -->
+<section class="scrub-section" id="demo-diagram">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="diagram-card">
+        <svg viewBox="0 0 460 300" width="100%" height="auto">
+          <line class="edge" id="edge-1" x1="90" y1="60" x2="230" y2="150"/>
+          <line class="edge" id="edge-2" x1="370" y1="60" x2="230" y2="150"/>
+          <line class="edge" id="edge-3" x1="230" y1="150" x2="230" y2="250"/>
+
+          <rect class="node" id="node-input" x="30" y="20" width="120" height="60" rx="8"/>
+          <text class="node-label" id="label-input" x="90" y="55" text-anchor="middle">client request</text>
+
+          <rect class="node" id="node-cache" x="310" y="20" width="120" height="60" rx="8"/>
+          <text class="node-label" id="label-cache" x="370" y="55" text-anchor="middle">edge cache</text>
+
+          <rect class="node" id="node-engine" x="170" y="120" width="120" height="60" rx="8"/>
+          <text class="node-label" id="label-engine" x="230" y="155" text-anchor="middle">AI engine</text>
+
+          <rect class="node" id="node-out" x="170" y="220" width="120" height="60" rx="8"/>
+          <text class="node-label" id="label-out" x="230" y="255" text-anchor="middle">response</text>
+        </svg>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0">
+        <p class="tag">Step 1</p>
+        <h3>Request comes in</h3>
+        <p>A client request hits the front door. Nothing downstream lights up yet.</p>
+      </div>
+      <div class="copy-step" data-step="1">
+        <p class="tag">Step 2</p>
+        <h3>Cache check runs in parallel</h3>
+        <p>The edge cache node activates alongside the request path — same tier, checked concurrently.</p>
+      </div>
+      <div class="copy-step" data-step="2">
+        <p class="tag">Step 3</p>
+        <h3>Routed to the engine</h3>
+        <p>On a cache miss, both paths converge into the AI engine box, which lights up to show it's doing the work.</p>
+      </div>
+      <div class="copy-step" data-step="3">
+        <p class="tag">Step 4</p>
+        <h3>Response returned</h3>
+        <p>The final edge lights and the response node activates — the diagram has told its whole story without a single fade-in-on-scroll trigger.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ================= DEMO 2: code typing itself ================= -->
+<section class="scrub-section" id="demo-code">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="code-card">
+        <div class="code-topbar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="code-body" id="code-output"></div>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0">
+        <p class="tag">Line 1</p>
+        <h3>Start from an empty file</h3>
+        <p>Scroll progress maps directly to a character count — reversible, so scrolling up deletes characters instead of just re-triggering a full replay.</p>
+      </div>
+      <div class="copy-step" data-step="1">
+        <p class="tag">Line 2</p>
+        <h3>The function signature appears</h3>
+        <p>Each keyframe is really just "how many characters of the string should be visible right now."</p>
+      </div>
+      <div class="copy-step" data-step="2">
+        <p class="tag">Line 3</p>
+        <h3>Body fills in</h3>
+        <p>This is the same effect Stripe uses on its homepage — a snippet that types itself as the page scrolls past it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ================= DEMO 3: stat morph scrollytelling ================= -->
+<section class="scrub-section" id="demo-stat">
+  <div class="scrub-track">
+    <div class="scrub-pinned">
+      <div class="stat-card">
+        <p class="stat-number" id="stat-number">0</p>
+        <p class="stat-unit" id="stat-unit">ms cold start</p>
+        <div class="progress-rail"><div class="progress-fill" id="stat-progress"></div></div>
+      </div>
+    </div>
+    <div class="scrub-copy">
+      <div class="copy-step" data-step="0">
+        <p class="tag">Before</p>
+        <h3>Cold start latency</h3>
+        <p>Most serverless setups pay a real tax the first time a function wakes up.</p>
+      </div>
+      <div class="copy-step" data-step="1">
+        <p class="tag">The fix</p>
+        <h3>Keep-warm pings</h3>
+        <p>A scheduled ping every few minutes keeps the runtime resident, cutting the number substantially.</p>
+      </div>
+      <div class="copy-step" data-step="2">
+        <p class="tag">The result</p>
+        <h3>Down to single digits</h3>
+        <p>The number counts down as you scroll — not a fixed animation, but a value directly bound to how far through the section you are.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<footer>
+  <h2>How it works, in short</h2>
+  <p>Each section above is one tall <code class="inline">.scrub-section</code>. Its left column is <code class="inline">position: sticky; top: 0</code>, so it locks in place for the full height of the right column's text. A single scroll listener computes <code class="inline">progress = (scrollY − sectionTop) / (sectionHeight − viewportHeight)</code>, clamped 0–1, and every visual — node fills, typed characters, the countdown — is a direct function of that one number. Scroll up and it runs backward for free.</p>
+</footer>
+
+<div class="outro">
+  <p class="eyebrow">End of samples</p>
+  <h2>Want one of these applied to your page?</h2>
+  <p class="lede">Tell me which pattern fits — node diagram, typing snippet, or stat countdown — and I'll wire it into your existing sections.</p>
+</div>
+
+<script>
+(function(){
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  function sectionProgress(section){
+    var rect = section.getBoundingClientRect();
+    var vh = window.innerHeight;
+    var total = rect.height - vh;
+    if(total <= 0) return 1;
+    var scrolled = -rect.top;
+    return clamp(scrolled / total, 0, 1);
+  }
+
+  function setActiveStep(section, progress){
+    var steps = section.querySelectorAll('.copy-step');
+    var idx = clamp(Math.floor(progress * steps.length), 0, steps.length - 1);
+    steps.forEach(function(s, i){ s.classList.toggle('active', i === idx); });
+    return idx;
+  }
+
+  // ---- demo 1: diagram ----
+  var diagramSection = document.getElementById('demo-diagram');
+  var edges = ['edge-1','edge-2','edge-3'].map(function(id){ return document.getElementById(id); });
+  var nodeGroups = [
+    { rect:'node-input', label:'label-input' },
+    { rect:'node-cache', label:'label-cache' },
+    { rect:'node-engine', label:'label-engine' },
+    { rect:'node-out', label:'label-out' }
+  ];
+  function renderDiagram(step){
+    // step 0: input only. step1: +cache +edge1. step2: +engine +edge2. step3: +out +edge3.
+    var litNodes = [0];
+    var litEdges = [];
+    if(step >= 1){ litNodes.push(1); litEdges.push(0); }
+    if(step >= 2){ litNodes.push(2); litEdges.push(1); }
+    if(step >= 3){ litNodes.push(3); litEdges.push(2); }
+    nodeGroups.forEach(function(g,i){
+      var on = litNodes.indexOf(i) !== -1;
+      document.getElementById(g.rect).classList.toggle('lit', on);
+      document.getElementById(g.label).classList.toggle('lit', on);
+    });
+    edges.forEach(function(e,i){
+      e.classList.toggle('lit', litEdges.indexOf(i) !== -1);
+    });
+  }
+
+  // ---- demo 2: code typing ----
+  var codeSection = document.getElementById('demo-code');
+  var codeOutput = document.getElementById('code-output');
+  var fullCode = [
+    { text: '<span class="com">// keep-warm ping, runs every 4 minutes</span>\n', from:'com' },
+    { text: '<span class="kw">export async function</span> ping() {\n', from:'kw' },
+    { text: '  <span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">"/api/health"</span>);\n', from:'str' },
+    { text: '  <span class="kw">return</span> res.status === <span class="str">200</span>;\n', from:'str' },
+    { text: '}', from:'kw' }
+  ];
+  var plainLines = [
+    '// keep-warm ping, runs every 4 minutes\n',
+    'export async function ping() {\n',
+    '  const res = await fetch("/api/health");\n',
+    '  return res.status === 200;\n',
+    '}'
+  ];
+  var htmlLines = fullCode.map(function(c){ return c.text; });
+  var totalChars = plainLines.join('').length;
+
+  function renderCode(progress){
+    var charsToShow = Math.round(progress * totalChars);
+    var built = '';
+    var remaining = charsToShow;
+    for(var i=0;i<plainLines.length;i++){
+      var plain = plainLines[i];
+      if(remaining >= plain.length){
+        built += htmlLines[i];
+        remaining -= plain.length;
+      } else if(remaining > 0){
+        // partial line: reveal plain chars only (skip markup complexity for the mid-line case)
+        built += plain.slice(0, remaining);
+        remaining = 0;
+      }
+    }
+    codeOutput.innerHTML = built + '<span class="cursor"></span>';
+  }
+
+  // ---- demo 3: stat countdown ----
+  var statSection = document.getElementById('demo-stat');
+  var statNumber = document.getElementById('stat-number');
+  var statUnit = document.getElementById('stat-unit');
+  var statProgress = document.getElementById('stat-progress');
+  function renderStat(progress){
+    var start = 1400, end = 8;
+    var value = Math.round(start - (start - end) * progress);
+    statNumber.textContent = value;
+    statUnit.textContent = progress > 0.6 ? 'ms — warm' : 'ms cold start';
+    statProgress.style.width = (progress * 100).toFixed(1) + '%';
+  }
+
+  function onScroll(){
+    var p1 = sectionProgress(diagramSection);
+    var step1 = setActiveStep(diagramSection, p1);
+    renderDiagram(step1);
+
+    var p2 = sectionProgress(codeSection);
+    setActiveStep(codeSection, p2);
+    renderCode(p2);
+
+    var p3 = sectionProgress(statSection);
+    setActiveStep(statSection, p3);
+    renderStat(p3);
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(!ticking){
+      window.requestAnimationFrame(function(){ onScroll(); ticking = false; });
+      ticking = true;
+    }
+  });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

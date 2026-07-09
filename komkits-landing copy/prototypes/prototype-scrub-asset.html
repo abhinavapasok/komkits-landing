@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — single-asset scroll scrub</title>
+<!--
+  PROTOTYPE — continuous single-asset scrub (pattern ref: twenty.com
+  HomeStepperLottie: one authored animation, scroll fraction = playback
+  position). Twenty feeds a 0→1 scrollProgress into a Lottie file;
+  this prototype proves the same architecture dependency-free with an
+  inline SVG whose every animated property is a pure function of ONE
+  progress value:
+
+      progress (0→1)  →  render(progress)
+
+  vs. 08-architecture today, which keeps a 5-way discrete stage state
+  machine (each stage owning its own reveal CSS). With this shape,
+  swapping the SVG renderer for `dotLottie.setFrame(progress * frames)`
+  later is a one-line change — the scroll plumbing is identical.
+
+  Ported verbatim: Twenty's computeScrollProgress (their unit-tested
+  scroll math). Floors: reduced-motion pins progress to section midpoint
+  (fully-drawn diagram, no scrubbing); rAF-throttled scroll listener.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#111214; --ink-700:#3F3F46; --ink-500:#6B7280; --ink-400:#9CA3AF;
+    --grey-50:#FAFAFA; --grey-100:#F4F4F5; --grey-200:#E4E4E7; --white:#FFFFFF;
+    --radius:4px; --ease:cubic-bezier(.2,.8,.4,1); --max:960px;
+    --shadow-z2:0 8px 24px rgba(17,18,20,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Public Sans',system-ui,sans-serif;background:var(--white);color:var(--ink-900);font-size:16px;line-height:1.55}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+  header,footer{padding:56px 0;text-align:center}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .lede{color:var(--ink-500);font-size:15px;max-width:60ch;margin:10px auto 0}
+  footer{color:var(--ink-400);font-size:14px}
+
+  /* tall scroll stage + sticky visual — same pin the mockup already uses */
+  .stage{height:320vh;position:relative}
+  .pin{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+  .visual{width:min(720px,92vw);background:var(--grey-50);border:1px solid var(--grey-200);border-radius:12px;
+    box-shadow:var(--shadow-z2);padding:28px}
+  .visual svg{width:100%;height:auto;display:block}
+
+  .hud{display:flex;align-items:center;gap:12px;font-size:12.5px;font-weight:600;color:var(--ink-500);
+    font-variant-numeric:tabular-nums}
+  .hud .bar{width:220px;height:4px;border-radius:99px;background:var(--grey-200);overflow:hidden}
+  .hud .bar i{display:block;height:100%;background:var(--ink-900);transform-origin:left;transform:scaleX(0)}
+  .caption{font-size:14px;font-weight:600;color:var(--ink-700);min-height:22px;transition:opacity .2s var(--ease)}
+
+  /* SVG asset styling — everything animated is driven from JS via one progress value */
+  .wire{fill:none;stroke:var(--ink-400);stroke-width:1.5}
+  .box{fill:var(--white);stroke:var(--ink-700);stroke-width:1.5;rx:6}
+  .lbl{font:700 11px 'Public Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;fill:var(--ink-500);text-anchor:middle}
+  .pulse{fill:var(--ink-900)}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Single-asset scroll scrub</h1>
+  <p class="lede">One SVG "asset", one 0→1 progress value — wires draw, nodes fade in,
+  a pulse travels the pipeline, all as pure functions of scroll fraction. No stage state machine.
+  Scroll slowly; scrub back and forth. (Swap the renderer for a Lottie <code>setFrame</code> later —
+  the plumbing doesn't change.)</p>
+</header>
+
+<div class="stage" id="stage">
+  <div class="pin">
+    <div class="visual">
+      <svg viewBox="0 0 640 220" aria-label="Data pipeline diagram, drawn progressively by scroll">
+        <!-- wires: drawn via stroke-dashoffset from progress -->
+        <path class="wire" id="w1" d="M150 110 H 250"/>
+        <path class="wire" id="w2" d="M390 110 H 490"/>
+        <path class="wire" id="w3" d="M320 70 V 30 H 560 V 88"/>
+        <!-- nodes: opacity/translate from progress -->
+        <g id="n1"><rect class="box" x="40" y="80" width="110" height="60" rx="6"/><text class="lbl" x="95" y="115">Storefront</text></g>
+        <g id="n2"><rect class="box" x="250" y="80" width="140" height="60" rx="6"/><text class="lbl" x="320" y="115">Core engine</text></g>
+        <g id="n3"><rect class="box" x="490" y="88" width="110" height="52" rx="6"/><text class="lbl" x="545" y="118">Your data</text></g>
+        <!-- traveling pulse -->
+        <circle class="pulse" id="pulse" r="4" opacity="0"/>
+      </svg>
+    </div>
+    <div class="hud"><span>progress</span><span class="bar"><i id="hud-fill"></i></span><output id="hud-val">0.00</output></div>
+    <p class="caption" id="caption"></p>
+  </div>
+</div>
+
+<footer>content continues after the pin…</footer>
+
+<script>
+(function(){
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- ported verbatim from twenty-website/platform/motion/compute-scroll-progress.ts ---- */
+  function computeScrollProgress(rectTop, rectHeight, viewportHeight){
+    const scrollableDistance = rectHeight - viewportHeight;
+    if (scrollableDistance <= 0) return null;
+    const raw = -rectTop / scrollableDistance;
+    return raw <= 0 ? 0 : raw >= 1 ? 1 : raw;
+  }
+
+  /* helpers: map progress into a sub-range, eased */
+  const seg=(p,a,b)=>Math.max(0,Math.min(1,(p-a)/(b-a)));
+  const ease=t=>t*t*(3-2*t);
+
+  const w1=document.getElementById('w1'), w2=document.getElementById('w2'), w3=document.getElementById('w3');
+  const n1=document.getElementById('n1'), n2=document.getElementById('n2'), n3=document.getElementById('n3');
+  const pulse=document.getElementById('pulse');
+  const hudFill=document.getElementById('hud-fill'), hudVal=document.getElementById('hud-val');
+  const caption=document.getElementById('caption');
+  for(const w of [w1,w2,w3]){ const L=w.getTotalLength(); w.style.strokeDasharray=L; w._len=L; }
+
+  const CAPTIONS=[
+    [0.00,'orders come in'],
+    [0.28,'the core does the math'],
+    [0.55,'everything lands in your database'],
+    [0.80,'and AI reads it live'],
+  ];
+
+  /* THE renderer: entire animation = f(progress). No stage flags anywhere. */
+  function render(p){
+    const drawN=(g,t)=>{ g.style.opacity=t; g.style.transform=`translateY(${(1-t)*8}px)`; };
+    const drawW=(w,t)=>{ w.style.strokeDashoffset=w._len*(1-t); };
+
+    drawN(n1, ease(seg(p,0.00,0.12)));
+    drawW(w1, ease(seg(p,0.10,0.28)));
+    drawN(n2, ease(seg(p,0.24,0.36)));
+    drawW(w2, ease(seg(p,0.34,0.52)));
+    drawN(n3, ease(seg(p,0.48,0.60)));
+    drawW(w3, ease(seg(p,0.58,0.78)));
+
+    /* pulse travels the whole pipeline across the last 40% */
+    const t=seg(p,0.60,0.98);
+    pulse.setAttribute('opacity', t>0&&t<1 ? 1 : 0);
+    if(t>0&&t<1){
+      const x = t<0.5 ? 150+(250-150)*(t/0.5) : 390+(490-390)*((t-0.5)/0.5);
+      pulse.setAttribute('cx', t<0.5 ? x : x); pulse.setAttribute('cy',110);
+      /* jump the engine box between wire segments */
+      if(t>=0.45&&t<=0.55) pulse.setAttribute('opacity',0);
+    }
+
+    hudFill.style.transform=`scaleX(${p})`;
+    hudVal.textContent=p.toFixed(2);
+    caption.textContent=CAPTIONS.reduce((acc,[at,txt])=>p>=at?txt:acc, CAPTIONS[0][1]);
+  }
+
+  const stage=document.getElementById('stage');
+
+  if(reduceMotion){ render(0.79); return; }   /* static: fully-drawn diagram, no scrub */
+
+  let scheduled=false;
+  function onScroll(){
+    if(scheduled) return; scheduled=true;
+    requestAnimationFrame(()=>{
+      scheduled=false;
+      const r=stage.getBoundingClientRect();
+      const p=computeScrollProgress(r.top, r.height, innerHeight);
+      if(p!==null) render(p);
+    });
+  }
+  addEventListener('scroll',onScroll,{passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>

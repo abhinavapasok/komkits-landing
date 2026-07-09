@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — architecture mobile swipe fork</title>
+<!--
+  PROTOTYPE — mobile interaction fork for 08-architecture (pattern ref:
+  twenty.com HomeStepper: layoutMode 'scroll' | 'swipe' by breakpoint).
+  Desktop keeps the existing pinned scrollytelling scrub; below md the
+  SAME five-step dataset becomes a horizontal scroll-snap carousel with
+  dot pagination, and the diagram above reacts to the snapped step —
+  instead of letting the pin degrade into a very tall un-sticky section.
+
+  Mechanics here are what would ship: CSS scroll-snap (native swipe
+  physics, no JS drag code), a scroll listener that derives the snapped
+  index, dots that scrollIntoView on tap. Rendered inside a fake phone
+  frame so it's testable on desktop; in the real section the carousel
+  simply replaces the step column under a max-width media query.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-900:#111214; --ink-700:#3F3F46; --ink-500:#6B7280; --ink-400:#9CA3AF;
+    --grey-50:#FAFAFA; --grey-100:#F4F4F5; --grey-200:#E4E4E7; --white:#FFFFFF;
+    --success:#00A04D; --success-bg:#E0F5EA; --success-bd:#A9E3C3;
+    --info:#008694; --info-bg:#E0F4F5; --info-bd:#A5DEE2;
+    --radius:4px; --ease:cubic-bezier(.2,.8,.4,1);
+    --shadow-z2:0 8px 24px rgba(17,18,20,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Public Sans',system-ui,sans-serif;background:var(--grey-50);color:var(--ink-900);
+    font-size:16px;line-height:1.55;padding:48px 24px;display:flex;flex-direction:column;align-items:center}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .lede{color:var(--ink-500);font-size:15px;max-width:62ch;margin-top:10px;text-align:center}
+
+  /* fake phone frame so the mobile behavior is testable on desktop */
+  .phone{width:380px;max-width:100%;margin-top:36px;background:var(--white);border:1px solid var(--grey-200);
+    border-radius:24px;box-shadow:var(--shadow-z2);padding:18px 0 22px;overflow:hidden}
+  .phone h2{font-size:20px;font-weight:800;letter-spacing:-.02em;padding:0 20px}
+  .phone .sub{font-size:13px;color:var(--ink-500);padding:2px 20px 14px}
+
+  /* ---- diagram: five nodes, active one lifts ---- */
+  .diagram{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:14px;margin:0 20px;
+    background:var(--grey-50);border:1px solid var(--grey-200);border-radius:8px}
+  .node{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px;border-radius:6px;
+    border:1px solid transparent;transition:all .35s var(--ease);opacity:.38}
+  .node i{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--ink-700);display:grid;place-items:center}
+  .node i svg{width:14px;height:14px;stroke:var(--ink-700);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .node span{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-500);text-align:center}
+  .node.on{opacity:1;background:var(--white);border-color:var(--grey-200);transform:translateY(-3px);box-shadow:0 4px 12px rgba(17,18,20,.08)}
+  .node.on i{background:var(--ink-900);border-color:var(--ink-900)}
+  .node.on i svg{stroke:var(--white)}
+
+  /* ---- swipe rail: native scroll-snap ---- */
+  .rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:18px 20px 6px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{display:none}
+  .step{flex:0 0 calc(100% - 48px);scroll-snap-align:center;background:var(--white);border:1px solid var(--grey-200);
+    border-radius:10px;padding:18px}
+  .step .k{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ink-400)}
+  .step h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:6px}
+  .step p{font-size:13px;color:var(--ink-500);margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:2px 9px;
+    border-radius:999px;margin-top:10px}
+  .chip.live{background:var(--success-bg);border:1px solid var(--success-bd);color:var(--success)}
+  .chip.soon{background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info)}
+
+  /* ---- dots ---- */
+  .dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+  .dots button{width:8px;height:8px;border-radius:50%;border:0;background:var(--grey-200);cursor:pointer;
+    padding:0;transition:all .25s var(--ease)}
+  .dots button.on{background:var(--ink-900);width:22px;border-radius:99px}
+
+  .note{margin-top:28px;background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
+    padding:12px 16px;font-size:13px;color:var(--ink-500);max-width:62ch}
+  .note b{color:var(--ink-700)}
+  .note code{font-family:ui-monospace,monospace;font-size:12px;background:var(--grey-100);padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<h1>Architecture section — mobile swipe fork</h1>
+<p class="lede">Below the <code>md</code> breakpoint, 08-architecture's pinned scrub becomes this:
+same five steps as a scroll-snap swipe carousel, diagram synced to the snapped card.
+Swipe the cards (or shift-scroll / drag the scrollbar area) — the diagram follows. Dots jump.</p>
+
+<div class="phone">
+  <h2>One platform, five layers</h2>
+  <p class="sub">Swipe through how KomKits fits together.</p>
+
+  <div class="diagram" id="diagram" aria-hidden="true">
+    <div class="node on"><i><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></i><span>Your apps</span></div>
+    <div class="node"><i><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></i><span>API layer</span></div>
+    <div class="node"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></i><span>Core engine</span></div>
+    <div class="node"><i><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></i><span>Your data</span></div>
+    <div class="node"><i><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 .7-3.7 3.5.9 5.3L12 15l-4.2 2.5.9-5.3L5 8.7 10 8z"/></svg></i><span>AI on top</span></div>
+  </div>
+
+  <div class="rail" id="rail" tabindex="0" aria-label="Architecture steps, swipe horizontally">
+    <div class="step"><span class="k">1 / 5</span><h3>Start where you work</h3><p>Web dashboard today; Shopify, WooCommerce &amp; WhatsApp storefronts connect next.</p><span class="chip live">Live today</span></div>
+    <div class="step"><span class="k">2 / 5</span><h3>One API for everything</h3><p>Every module — invoices, inventory, payments — speaks through the same versioned API.</p><span class="chip live">Live today</span></div>
+    <div class="step"><span class="k">3 / 5</span><h3>The core does the math</h3><p>Totals, taxes, stock counts and return caps are computed once, in one engine — never in the UI.</p><span class="chip live">Live today</span></div>
+    <div class="step"><span class="k">4 / 5</span><h3>Your data stays yours</h3><p>Each business gets its own isolated database. No pooling, no sharing, exportable any day.</p><span class="chip live">Live today</span></div>
+    <div class="step"><span class="k">5 / 5</span><h3>AI reads it all</h3><p>Reports, plain-language questions, MCP for ChatGPT &amp; Claude — AI sits on top of live data.</p><span class="chip soon">Growing</span></div>
+  </div>
+
+  <div class="dots" id="dots" role="tablist" aria-label="Step"></div>
+</div>
+
+<p class="note"><b>What ships:</b> the carousel replaces the desktop step column under
+<code>@media (max-width: …md)</code>; the pinned scrub markup stays untouched above it (Twenty's
+<code>layoutMode: 'scroll' | 'swipe'</code> fork). Snap position → active index is one scroll
+listener (<code>round(scrollLeft / cardWidth)</code>); no drag JS — the browser owns the physics.
+Reduced-motion changes nothing here: swiping is user-driven, only the diagram transition
+duration collapses.</p>
+
+<script>
+(function(){
+  const rail=document.getElementById('rail');
+  const nodes=[...document.querySelectorAll('#diagram .node')];
+  const steps=[...rail.children];
+  const dots=document.getElementById('dots');
+  let active=0;
+
+  steps.forEach((_,i)=>{
+    const b=document.createElement('button');
+    b.setAttribute('aria-label','Step '+(i+1));
+    b.addEventListener('click',()=>steps[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}));
+    dots.appendChild(b);
+  });
+  const dotEls=[...dots.children];
+
+  function setActive(i){
+    if(i===active) return;
+    active=i;
+    nodes.forEach((n,j)=>n.classList.toggle('on',j===i));
+    dotEls.forEach((d,j)=>d.classList.toggle('on',j===i));
+  }
+  dotEls[0].classList.add('on');
+
+  /* snapped index = the whole mobile sync layer */
+  rail.addEventListener('scroll',()=>{
+    const i=Math.round(rail.scrollLeft/(steps[0].offsetWidth+12));
+    setActive(Math.max(0,Math.min(steps.length-1,i)));
+  },{passive:true});
+})();
+</script>
+</body>
+</html>
