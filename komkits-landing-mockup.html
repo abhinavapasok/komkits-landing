@@ -363,14 +363,14 @@ function makeHalftone(canvas, mount, host, opts){
   .hero{padding:120px 0 0;position:relative;overflow:hidden;background:linear-gradient(180deg, var(--white) 0%, #FAFBFD 55%, #F1F3F6 100%)}
 
   /* ---- centered text block ---- */
-  .hero-text{text-align:center;max-width:720px;margin:0 auto;padding:0 24px}
+  .hero-text{text-align:center;max-width:760px;margin:0 auto;padding:0 24px}
   .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:var(--white);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,0.04);font-size:13px;font-weight:600;color:var(--ink-700);margin-bottom:24px}
   .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald)}
   .hero-badge svg{width:14px;height:14px;color:var(--ink-400)}
 
-  .hero h1{font-size:clamp(40px,5.8vw,64px);line-height:1.06;letter-spacing:-0.035em;color:var(--ink-900);font-weight:700;margin-bottom:20px}
+  .hero h1{font-size:clamp(38px,5.8vw,64px);line-height:1.06;letter-spacing:-0.035em;color:var(--ink-900);font-weight:700;margin-bottom:20px}
   .hero h1 .grad{background:linear-gradient(135deg,#0F172A 0%,#334155 50%,#059669 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .hero-sub{font-size:clamp(17px,2vw,20px);line-height:1.55;color:var(--ink-500);max-width:620px;margin:0 auto 32px}
+  .hero-sub{font-size:clamp(16px,2vw,20px);line-height:1.55;color:var(--ink-500);max-width:640px;margin:0 auto 32px}
 
   /* ---- CTA buttons ---- */
   .hero-ctas{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
@@ -383,19 +383,19 @@ function makeHalftone(canvas, mount, host, opts){
   .btn-sec:hover{background:var(--ink-50);border-color:var(--ink-300);color:var(--ink-900)}
 
   /* trust checks — clean unboxed inline row */
-  .hero-checks{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px;justify-content:center}
+  .hero-checks{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px;justify-content:center}
   .hero-checks span{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-500);font-weight:500}
   .hero-checks span svg{width:15px;height:15px;color:var(--emerald);flex-shrink:0}
   .hero-checks .sep{color:var(--ink-300);font-weight:700;font-size:14px;user-select:none}
 
   /* ================= hero stage (recessed desktop area) ================= */
-  .hero-stage{margin-top:28px;padding:0 24px 64px;position:relative}
-  .hero-stage-inner{max-width:860px;margin:0 auto;position:relative}
+  .hero-stage{margin-top:32px;padding:0 24px 72px;position:relative}
+  .hero-stage-inner{max-width:960px;margin:0 auto;position:relative}
 
   /* subtle ambient glow behind the card */
-  .stage-glow{position:absolute;top:10%;left:50%;transform:translateX(-50%);width:82%;height:70%;background:radial-gradient(ellipse at center, rgba(16,185,129,0.14) 0%, rgba(59,130,246,0.08) 50%, transparent 75%);filter:blur(48px);pointer-events:none;z-index:0}
+  .stage-glow{position:absolute;top:8%;left:50%;transform:translateX(-50%);width:88%;height:75%;background:radial-gradient(ellipse at center, rgba(16,185,129,0.14) 0%, rgba(59,130,246,0.08) 50%, transparent 75%);filter:blur(52px);pointer-events:none;z-index:0}
 
-  /* ---- widescreen app window card ---- */
+  /* ---- widescreen 960px app window card ---- */
   .chat-card{
     position:relative;z-index:1;
     background:var(--white);
@@ -403,43 +403,43 @@ function makeHalftone(canvas, mount, host, opts){
     border-radius:18px;
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.8) inset,
-      0 20px 50px -12px rgba(15,23,42,0.15),
-      0 8px 24px -6px rgba(15,23,42,0.06);
+      0 24px 60px -12px rgba(15,23,42,0.16),
+      0 10px 28px -6px rgba(15,23,42,0.07);
     overflow:hidden;
     display:flex;
-    min-height:500px;
+    min-height:540px;
     transition:box-shadow .3s ease;
   }
   .chat-card:hover{
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.9) inset,
-      0 24px 60px -12px rgba(15,23,42,0.18),
-      0 10px 28px -6px rgba(15,23,42,0.08);
+      0 28px 68px -12px rgba(15,23,42,0.19),
+      0 12px 32px -6px rgba(15,23,42,0.09);
   }
 
   /* ---- left module rail (Linear / Twenty style) ---- */
   .app-sidebar{
-    width:58px;
+    width:60px;
     background:#F8FAFC;
     border-right:1px solid var(--line);
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:14px 0;
+    padding:16px 0;
     gap:8px;
     flex-shrink:0;
     user-select:none;
   }
   .app-sidebar-logo{
-    width:32px;height:32px;border-radius:8px;
+    width:34px;height:34px;border-radius:9px;
     background:linear-gradient(135deg,#0F172A,#1E293B);
     display:flex;align-items:center;justify-content:center;
-    color:var(--white);font-weight:700;font-size:14px;
-    margin-bottom:10px;
+    color:var(--white);font-weight:700;font-size:15px;
+    margin-bottom:12px;
     box-shadow:0 2px 6px rgba(15,23,42,0.15);
   }
   .app-nav-btn{
-    width:38px;height:38px;border-radius:9px;
+    width:40px;height:40px;border-radius:10px;
     display:flex;align-items:center;justify-content:center;
     color:var(--ink-400);background:transparent;
     border:none;cursor:pointer;transition:all .18s ease;
@@ -454,11 +454,11 @@ function makeHalftone(canvas, mount, host, opts){
     content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:3px;
     border-radius:0 3px 3px 0;background:var(--emerald);
   }
-  .app-nav-btn svg{width:18px;height:18px}
+  .app-nav-btn svg{width:19px;height:19px}
 
   /* tooltip on hover */
   .app-nav-btn .tip{
-    position:absolute;left:48px;top:50%;transform:translateY(-50%) translateX(4px);
+    position:absolute;left:50px;top:50%;transform:translateY(-50%) translateX(4px);
     background:var(--ink-900);color:var(--white);font-size:12px;font-weight:600;
     padding:5px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;
     opacity:0;transition:all .15s ease;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,0.15);
@@ -467,15 +467,46 @@ function makeHalftone(canvas, mount, host, opts){
 
   .app-sidebar-divider{width:28px;height:1px;background:var(--line);margin:4px 0}
 
+  /* ---- mobile horizontal module tab bar ---- */
+  .mobile-tab-bar{
+    display:none;
+    align-items:center;
+    gap:6px;
+    padding:8px 14px;
+    background:#F8FAFC;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .mobile-tab-bar::-webkit-scrollbar{display:none}
+  .mobile-tab-btn{
+    padding:6px 14px;
+    border-radius:100px;
+    border:1px solid var(--line);
+    background:var(--white);
+    color:var(--ink-600);
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .mobile-tab-btn.active{
+    background:var(--ink-900);
+    color:var(--white);
+    border-color:var(--ink-900);
+  }
+
   /* ---- main app content area ---- */
   .app-main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--white)}
 
   /* top application header bar */
   .app-header{
-    height:48px;padding:0 20px;
+    height:50px;padding:0 22px;
     border-bottom:1px solid var(--line);
     display:flex;align-items:center;justify-content:space-between;
-    background:rgba(255,255,255,0.9);
+    background:rgba(255,255,255,0.92);
     backdrop-filter:blur(8px);
   }
   .app-header-left{display:flex;align-items:center;gap:14px}
@@ -485,15 +516,16 @@ function makeHalftone(canvas, mount, host, opts){
   .mac-dot.y{background:#FFBD2E;border:1px solid #DEA123}
   .mac-dot.g{background:#27C93F;border:1px solid #1AAB29}
 
-  .app-breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-700)}
+  .app-breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-700);white-space:nowrap}
   .app-breadcrumb span{color:var(--ink-400);font-weight:400}
 
   .app-header-right{display:flex;align-items:center;gap:10px}
   .app-sync-pill{
     display:inline-flex;align-items:center;gap:6px;
-    padding:4px 10px;border-radius:100px;
+    padding:4px 11px;border-radius:100px;
     background:#ECFDF5;border:1px solid #A7F3D0;
-    color:#065F46;font-size:11px;font-weight:600;
+    color:#065F46;font-size:11.5px;font-weight:600;
+    white-space:nowrap;
   }
   .app-sync-dot{width:6px;height:6px;border-radius:50%;background:#10B981}
 
@@ -503,7 +535,7 @@ function makeHalftone(canvas, mount, host, opts){
     display:none;
     flex:1;
     flex-direction:column;
-    padding:22px 24px;
+    padding:24px 28px;
     animation:fadeInPanel .22s ease-out;
   }
   .module-panel.active{display:flex}
@@ -516,47 +548,47 @@ function makeHalftone(canvas, mount, host, opts){
   .ai-top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
   .ai-prompt-bubble{
     display:inline-flex;align-items:center;gap:10px;
-    padding:10px 18px;border-radius:12px;
+    padding:11px 18px;border-radius:12px;
     background:var(--ink-900);color:var(--white);
     font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(15,23,42,0.15);
   }
 
   .ai-response-box{
-    border:1px solid var(--line);border-radius:12px;
-    background:#FAFBFC;padding:18px;
+    border:1px solid var(--line);border-radius:14px;
+    background:#FAFBFC;padding:20px;
     display:flex;flex-direction:column;gap:14px;
   }
   .ai-response-header{display:flex;align-items:center;justify-content:space-between}
-  .ai-response-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink-800)}
+  .ai-response-title{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--ink-800)}
   .ai-response-title svg{width:16px;height:16px;color:var(--emerald)}
 
   .overdue-list{display:flex;flex-direction:column;gap:10px}
   .overdue-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;border-radius:8px;background:var(--white);
+    padding:12px 16px;border-radius:10px;background:var(--white);
     border:1px solid var(--line);
   }
-  .overdue-party{font-weight:600;font-size:13px;color:var(--ink-900)}
+  .overdue-party{font-weight:600;font-size:13.5px;color:var(--ink-900)}
   .overdue-meta{font-size:12px;color:var(--ink-500)}
-  .overdue-bar-wrap{flex:1;max-width:200px;margin:0 18px;height:6px;border-radius:100px;background:#E2E8F0;overflow:hidden}
+  .overdue-bar-wrap{flex:1;max-width:240px;margin:0 20px;height:6px;border-radius:100px;background:#E2E8F0;overflow:hidden}
   .overdue-bar{height:100%;border-radius:100px;background:var(--emerald);transition:width 1.2s cubic-bezier(0.16, 1, 0.3, 1)}
-  .overdue-amt{font-weight:700;font-size:13px;color:#DC2626}
+  .overdue-amt{font-weight:700;font-size:13.5px;color:#DC2626}
 
   /* bottom ai input bar */
   .ai-input-bar{
-    margin-top:auto;padding-top:16px;
+    margin-top:auto;padding-top:18px;
     display:flex;align-items:center;gap:10px;
   }
   .ai-input-field{
     flex:1;display:flex;align-items:center;gap:10px;
-    padding:11px 16px;border-radius:10px;
+    padding:12px 16px;border-radius:10px;
     border:1px solid var(--line);background:var(--white);
-    color:var(--ink-400);font-size:13px;
+    color:var(--ink-400);font-size:13.5px;
   }
   .ai-send-btn{
-    padding:10px 18px;border-radius:10px;
+    padding:11px 20px;border-radius:10px;
     background:var(--ink-900);color:var(--white);
-    font-size:13px;font-weight:600;border:none;cursor:pointer;
+    font-size:13.5px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;
   }
 
   /* ================== MODULE 2: CREATE INVOICE (DocumentForm.tsx) ================== */
@@ -566,7 +598,7 @@ function makeHalftone(canvas, mount, host, opts){
   .doc-number-pill{padding:3px 9px;border-radius:6px;background:#EFF6FF;color:#1D4ED8;font-size:12px;font-weight:700;border:1px solid #BFDBFE}
 
   .docform-party-card{
-    padding:14px 16px;border-radius:10px;background:#F8FAFC;
+    padding:14px 18px;border-radius:10px;background:#F8FAFC;
     border:1px solid var(--line);margin-bottom:16px;
     display:grid;grid-template-columns:1.8fr 1.2fr;gap:16px;
   }
@@ -576,16 +608,16 @@ function makeHalftone(canvas, mount, host, opts){
 
   /* document line items table */
   .table-wrap{
-    border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--white);
-    margin-bottom:16px;
+    border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--white);
+    margin-bottom:16px;-webkit-overflow-scrolling:touch;
   }
-  .erp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .erp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:540px}
   .erp-table th{
     background:#F8FAFC;color:var(--ink-500);font-weight:600;text-align:left;
-    padding:10px 14px;border-bottom:1px solid var(--line);font-size:11px;
+    padding:11px 16px;border-bottom:1px solid var(--line);font-size:11px;
     text-transform:uppercase;letter-spacing:0.04em;
   }
-  .erp-table td{padding:11px 14px;border-bottom:1px solid #F1F5F9;color:var(--ink-800)}
+  .erp-table td{padding:12px 16px;border-bottom:1px solid #F1F5F9;color:var(--ink-800)}
   .erp-table tr:last-child td{border-bottom:none}
   .sku-badge{display:inline-block;padding:2px 6px;border-radius:4px;background:#F1F5F9;color:var(--ink-600);font-family:monospace;font-size:11px;margin-right:6px}
 
@@ -593,13 +625,13 @@ function makeHalftone(canvas, mount, host, opts){
     display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;margin-top:auto;
   }
   .docform-totals{
-    width:240px;background:#FAFBFC;border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+    width:250px;background:#FAFBFC;border:1px solid var(--line);border-radius:10px;padding:12px 16px;
     display:flex;flex-direction:column;gap:6px;font-size:13px;
   }
   .docform-totals-row{display:flex;justify-content:space-between;color:var(--ink-600)}
   .docform-totals-row.grand{font-weight:700;color:var(--ink-900);font-size:14px;border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
 
-  .docform-actions{display:flex;align-items:center;gap:10px}
+  .docform-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .btn-doc-save{
     padding:10px 18px;border-radius:8px;background:#059669;color:var(--white);
     font-size:13px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
@@ -610,9 +642,9 @@ function makeHalftone(canvas, mount, host, opts){
   }
 
   /* ================== MODULE 3, 4, 5: LEDGER & KPI CARDS ================== */
-  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
   .kpi-card{
-    padding:14px;border-radius:10px;background:#F8FAFC;border:1px solid var(--line);
+    padding:14px 16px;border-radius:10px;background:#F8FAFC;border:1px solid var(--line);
   }
   .kpi-label{font-size:11.5px;font-weight:600;color:var(--ink-500);margin-bottom:4px}
   .kpi-val{font-size:18px;font-weight:700;color:var(--ink-900)}
@@ -642,11 +674,42 @@ function makeHalftone(canvas, mount, host, opts){
     white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.2);
   }
 
-  /* ================= responsive ================= */
+  /* ================= RESPONSIVE DESIGN (TABLETS & PHONES) ================= */
   @media(max-width: 860px){
     .app-sidebar{display:none}
+    .mobile-tab-bar{display:flex}
     .kpi-grid{grid-template-columns:1fr}
-    .docform-party-card{grid-template-columns:1fr}
+    .docform-party-card{grid-template-columns:1fr;gap:12px}
+    .docform-summary-grid{grid-template-columns:1fr;gap:16px}
+    .docform-totals{width:100%}
+    .module-panel{padding:18px 16px}
+  }
+
+  @media(max-width: 640px){
+    .hero{padding:94px 0 0}
+    .hero-stage{padding:0 12px 48px;margin-top:24px}
+    .hero-checks{flex-direction:column;gap:8px}
+    .hero-checks .sep{display:none} /* Removes trailing dots when stacked vertically */
+
+    /* Compact header on mobile phones */
+    .app-header{padding:0 14px;height:44px}
+    .mac-dots{display:none} /* Frees up width so breadcrumb & sync pill fit on single row */
+    .app-breadcrumb{font-size:12px}
+    .app-sync-pill{padding:3px 8px;font-size:10.5px}
+
+    /* Stack overdue rows neatly */
+    .overdue-row{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+    .overdue-bar-wrap{width:100%;max-width:100%;margin:4px 0}
+    .overdue-amt{align-self:flex-end}
+
+    /* Stack AI input bar */
+    .ai-input-bar{flex-direction:column;align-items:stretch;gap:8px}
+    .ai-send-btn{width:100%;text-align:center}
+
+    /* Stack document form actions */
+    .docform-header{flex-direction:column;align-items:flex-start;gap:8px}
+    .docform-actions{flex-direction:column;align-items:stretch;width:100%}
+    .btn-doc-save, .btn-doc-sec{width:100%;justify-content:center}
   }
 </style>
 
@@ -689,10 +752,10 @@ function makeHalftone(canvas, mount, host, opts){
     <div class="hero-stage-inner">
       <div class="stage-glow"></div>
 
-      <!-- widescreen 860px application window -->
+      <!-- widescreen 960px application window -->
       <div class="chat-card" id="appCard">
 
-        <!-- left module navigation rail (Linear / Twenty style) -->
+        <!-- left module navigation rail (Linear / Twenty style for desktop) -->
         <aside class="app-sidebar">
           <div class="app-sidebar-logo">K</div>
 
@@ -745,6 +808,15 @@ function makeHalftone(canvas, mount, host, opts){
               </span>
             </div>
           </header>
+
+          <!-- mobile horizontal module navigation bar -->
+          <nav class="mobile-tab-bar" aria-label="Mobile Module Selector">
+            <button class="mobile-tab-btn active" data-tab="ai">AI Assistant</button>
+            <button class="mobile-tab-btn" data-tab="form">New Invoice</button>
+            <button class="mobile-tab-btn" data-tab="invoices">Invoices</button>
+            <button class="mobile-tab-btn" data-tab="inventory">Stock</button>
+            <button class="mobile-tab-btn" data-tab="payments">Payments</button>
+          </nav>
 
           <div class="app-views">
 
@@ -1069,7 +1141,7 @@ function makeHalftone(canvas, mount, host, opts){
 <script>
 (() => {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const navBtns = document.querySelectorAll('.app-nav-btn');
+  const navBtns = document.querySelectorAll('.app-nav-btn, .mobile-tab-btn');
   const panels = document.querySelectorAll('.module-panel');
   const breadcrumb = document.getElementById('headerBreadcrumb');
   const vcursor = document.getElementById('vcursor');
