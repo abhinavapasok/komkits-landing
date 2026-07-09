@@ -317,10 +317,16 @@
     white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.2);
   }
 
-  /* ================= RESPONSIVE HERO SPACING (CROPPING FULL 1160px APP WINDOW) ================= */
+  /* ================= RESPONSIVE HERO SPACING (LEFT-ALIGNED CROPPING LIKE LINEAR/TWENTY) ================= */
+  @media(max-width: 1200px){
+    .hero-stage{justify-content:flex-start;padding:0 0 72px 16px}
+    .hero-stage-inner{margin:0}
+  }
+
   @media(max-width: 640px){
     .hero{padding:94px 0 0}
-    .hero-stage{padding:0 0 56px;margin-top:28px}
+    .hero-stage{justify-content:flex-start;padding:0 0 56px 14px;margin-top:28px}
+    .hero-stage-inner{margin:0}
     .hero-checks{flex-direction:column;gap:8px}
     .hero-checks .sep{display:none}
   }
