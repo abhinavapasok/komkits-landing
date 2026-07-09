@@ -28,16 +28,17 @@
   .hero-checks span svg{width:15px;height:15px;color:var(--emerald);flex-shrink:0}
   .hero-checks .sep{color:var(--ink-300);font-weight:700;font-size:14px;user-select:none}
 
-  /* ================= hero stage (recessed desktop area) ================= */
-  .hero-stage{margin-top:36px;padding:0 24px 80px;position:relative}
-  .hero-stage-inner{max-width:1160px;margin:0 auto;position:relative}
+  /* ================= hero stage (recessed desktop area with clean edge cropping) ================= */
+  .hero-stage{margin-top:36px;padding:0 0 80px;position:relative;overflow:hidden;display:flex;justify-content:center}
+  .hero-stage-inner{width:1160px;position:relative}
 
   /* subtle ambient glow behind the card */
   .stage-glow{position:absolute;top:8%;left:50%;transform:translateX(-50%);width:92%;height:78%;background:radial-gradient(ellipse at center, rgba(16,185,129,0.14) 0%, rgba(59,130,246,0.08) 50%, transparent 75%);filter:blur(56px);pointer-events:none;z-index:0}
 
-  /* ---- widescreen 1160px app window card ---- */
+  /* ---- widescreen 1160px app window card (fixed enterprise resolution, crops cleanly) ---- */
   .chat-card{
     position:relative;z-index:1;
+    width:1160px;min-width:1160px;
     background:var(--white);
     border:1px solid rgba(15,23,42,0.09);
     border-radius:20px;
@@ -110,39 +111,6 @@
   .app-nav-btn:hover .tip{opacity:1;transform:translateY(-50%) translateX(0)}
 
   .app-sidebar-divider{width:28px;height:1px;background:var(--line);margin:4px 0}
-
-  /* ---- mobile horizontal module tab bar ---- */
-  .mobile-tab-bar{
-    display:none;
-    align-items:center;
-    gap:6px;
-    padding:8px 14px;
-    background:#FAFBFC;
-    border-bottom:1px solid var(--line);
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .mobile-tab-bar::-webkit-scrollbar{display:none}
-  .mobile-tab-btn{
-    padding:6px 14px;
-    border-radius:100px;
-    border:1px solid var(--line);
-    background:var(--white);
-    color:var(--ink-600);
-    font-size:12px;
-    font-weight:600;
-    white-space:nowrap;
-    cursor:pointer;
-    transition:all .15s ease;
-    box-shadow:0 1px 2px rgba(15,23,42,0.03);
-  }
-  .mobile-tab-btn.active{
-    background:var(--ink-900);
-    color:var(--white);
-    border-color:var(--ink-900);
-    box-shadow:0 2px 6px rgba(15,23,42,0.18);
-  }
 
   /* ---- main app content area ---- */
   .app-main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--white)}
@@ -349,42 +317,12 @@
     white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.2);
   }
 
-  /* ================= RESPONSIVE DESIGN (TABLETS & PHONES) ================= */
-  @media(max-width: 860px){
-    .app-sidebar{display:none}
-    .mobile-tab-bar{display:flex}
-    .kpi-grid{grid-template-columns:1fr}
-    .docform-party-card{grid-template-columns:1fr;gap:12px}
-    .docform-summary-grid{grid-template-columns:1fr;gap:16px}
-    .docform-totals{width:100%}
-    .module-panel{padding:18px 16px}
-  }
-
+  /* ================= RESPONSIVE HERO SPACING (CROPPING FULL 1160px APP WINDOW) ================= */
   @media(max-width: 640px){
     .hero{padding:94px 0 0}
-    .hero-stage{padding:0 12px 48px;margin-top:24px}
+    .hero-stage{padding:0 0 56px;margin-top:28px}
     .hero-checks{flex-direction:column;gap:8px}
-    .hero-checks .sep{display:none} /* Removes trailing dots when stacked vertically */
-
-    /* Compact header on mobile phones */
-    .app-header{padding:0 14px;height:44px}
-    .mac-dots{display:none} /* Frees up width so breadcrumb & sync pill fit on single row */
-    .app-breadcrumb{font-size:12px}
-    .app-sync-pill{padding:3px 8px;font-size:10.5px}
-
-    /* Stack overdue rows neatly */
-    .overdue-row{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
-    .overdue-bar-wrap{width:100%;max-width:100%;margin:4px 0}
-    .overdue-amt{align-self:flex-end}
-
-    /* Stack AI input bar */
-    .ai-input-bar{flex-direction:column;align-items:stretch;gap:8px}
-    .ai-send-btn{width:100%;text-align:center}
-
-    /* Stack document form actions */
-    .docform-header{flex-direction:column;align-items:flex-start;gap:8px}
-    .docform-actions{flex-direction:column;align-items:stretch;width:100%}
-    .btn-doc-save, .btn-doc-sec{width:100%;justify-content:center}
+    .hero-checks .sep{display:none}
   }
 </style>
 
@@ -483,15 +421,6 @@
               </span>
             </div>
           </header>
-
-          <!-- mobile horizontal module navigation bar -->
-          <nav class="mobile-tab-bar" aria-label="Mobile Module Selector">
-            <button class="mobile-tab-btn active" data-tab="ai">AI Assistant</button>
-            <button class="mobile-tab-btn" data-tab="form">New Invoice</button>
-            <button class="mobile-tab-btn" data-tab="invoices">Invoices</button>
-            <button class="mobile-tab-btn" data-tab="inventory">Stock</button>
-            <button class="mobile-tab-btn" data-tab="payments">Payments</button>
-          </nav>
 
           <div class="app-views">
 
@@ -816,7 +745,7 @@
 <script>
 (() => {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const navBtns = document.querySelectorAll('.app-nav-btn, .mobile-tab-btn');
+  const navBtns = document.querySelectorAll('.app-nav-btn');
   const panels = document.querySelectorAll('.module-panel');
   const breadcrumb = document.getElementById('headerBreadcrumb');
   const vcursor = document.getElementById('vcursor');
