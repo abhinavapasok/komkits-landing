@@ -702,6 +702,7 @@ function makeHalftone(canvas, mount, host, opts){
 </style>
 
 <section class="hero" id="hero">
+  <div class="halftone-mount" id="ht-hero-mount" aria-hidden="true"><canvas id="ht-hero"></canvas></div>
   <div class="hero-text">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
@@ -1196,8 +1197,24 @@ function makeHalftone(canvas, mount, host, opts){
     });
   });
 
-  // initial cursor position
   setTimeout(() => moveCursorToTab('ai'), 800);
+
+  /* ===== hero halftone backdrop (ambient field + pointer proximity) ===== */
+  const mount=document.getElementById('ht-hero-mount');
+  if(mount && typeof makeHalftone==='function'){
+    makeHalftone(document.getElementById('ht-hero'), mount, mount.parentElement, {
+      gap:18, color:'rgba(17,18,20,.30)',
+      radiusAt(c,r,x,y,t,px,py,w,h){
+        const mx=x/w, my=y/h;
+        const mask=Math.max(0, mx*1.15-0.18) * Math.max(0, 1-my*1.05);
+        if(mask<=0.02) return 0;
+        const n=htNoise(c*0.16+t*0.35, r*0.16+t*0.22);
+        const d=Math.hypot(x-px,y-py);
+        const boost=Math.max(0,1-d/190);
+        return (0.4 + n*1.5)*mask + boost*boost*2.6;
+      }
+    });
+  }
 })();
 </script>
 
@@ -1700,14 +1717,12 @@ function makeHalftone(canvas, mount, host, opts){
   .art-row .ic{width:30px;height:30px;border-radius:var(--radius);background:var(--grey-100);border:1px solid var(--grey-200);display:grid;place-items:center;flex:none}
   .art-row .ic svg{width:15px;height:15px;stroke:var(--ink-700)}
   .art-row b{font-weight:600}
-  .art-row .end{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-500);display:flex;align-items:center;gap:10px}
-  .mobile-swipe-guide{display:none}
-  @media (max-width:860px){
-    .tab-panel{grid-template-columns:1fr;gap:28px}
-    .mobile-swipe-guide{display:flex;align-items:center;justify-content:space-between;
-      background:var(--grey-50);border:1px solid var(--grey-200);border-radius:999px;
-      padding:6px 14px;margin:24px 0 -16px;font-size:11.5px;font-weight:600;color:var(--ink-700)}
-  }
+  .tabs-rail-wrap{position:relative}
+  .tabs-rail-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:48px;
+    background:linear-gradient(to right,rgba(255,255,255,0),var(--white));pointer-events:none;
+    opacity:1;transition:opacity .3s var(--ease)}
+  .tabs-rail-wrap.scrolled-end::after{opacity:0}
+  @media (max-width:860px){.tab-panel{grid-template-columns:1fr;gap:28px}}
 </style>
 
 <!-- ================= 4. modules tabs walkthrough (komkits-tabs-sample pattern) ================= -->
@@ -1717,12 +1732,8 @@ function makeHalftone(canvas, mount, host, opts){
     <h2>A complete back office, out of the box</h2>
     <p class="lede">From the first sale to the final settlement — KomKits covers the full financial and operational loop of your business. Every feature is an independent module: use what you need, add more as you grow.</p>
 
-    <div class="mobile-swipe-guide" aria-hidden="true">
-      <span>👆 Tap or swipe tabs horizontally</span>
-      <span>↔</span>
-    </div>
-
-    <div class="tabs-rail" role="tablist" aria-label="Core modules" id="mod-rail">
+    <div class="tabs-rail-wrap" id="mod-rail-wrap">
+      <div class="tabs-rail" role="tablist" aria-label="Core modules" id="mod-rail">
       <button class="tab-btn active" role="tab" aria-selected="true" data-tab="t1"><span class="num">1</span>Sales Invoicing</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t2"><span class="num">2</span>Purchase Invoicing</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t3"><span class="num">3</span>Items</button>
@@ -1730,6 +1741,7 @@ function makeHalftone(canvas, mount, host, opts){
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t5"><span class="num">5</span>Expense &amp; Income</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t6"><span class="num">6</span>Payments</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t7"><span class="num">7</span>Staff &amp; Salary</button>
+      </div>
     </div>
 
     <div class="tab-panel active" id="t1" role="tabpanel">
@@ -1830,6 +1842,13 @@ function makeHalftone(canvas, mount, host, opts){
   sec.addEventListener('pointerenter',()=>clearTimeout(timer));
   sec.addEventListener('pointerleave',arm);
   new IntersectionObserver(es=>es.forEach(e=>{e.isIntersecting?arm():clearTimeout(timer);}),{threshold:.3}).observe(sec);
+  const rail=document.getElementById('mod-rail'), wrap=document.getElementById('mod-rail-wrap');
+  if(rail && wrap){
+    rail.addEventListener('scroll',()=>{
+      const end=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-16;
+      wrap.classList.toggle('scrolled-end',end);
+    },{passive:true});
+  }
 })();
 </script>
 
@@ -2036,16 +2055,11 @@ function makeHalftone(canvas, mount, host, opts){
   .arch-swipe .as-node span{font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-500);text-align:center;line-height:1.2}
   .arch-swipe .as-node.on{opacity:1;background:var(--grey-50);border-color:var(--grey-200);transform:translateY(-2px) scale(1.04);box-shadow:var(--shadow-z1)}
   .arch-swipe .as-node.on svg{stroke:var(--ink-900)}
-  .arch-swipe .as-swipe-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;
-    background:var(--grey-50);border:1px solid var(--grey-200);border-radius:999px;padding:6px 14px;margin-bottom:16px;
-    font-size:11.5px;font-weight:600;color:var(--ink-700)}
-  .arch-swipe .as-hint-pill{display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--grey-200);
-    border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--ink-900);box-shadow:var(--shadow-z1)}
-  .arch-swipe .as-hint-arr{display:inline-flex;align-items:center;gap:3px;color:var(--ink-500);animation:asSwipePulse 1.8s ease-in-out infinite}
-  @keyframes asSwipePulse{
-    0%,100%{transform:translateX(0)}
-    50%{transform:translateX(4px)}
-  }
+  .arch-swipe .as-rail-wrap{position:relative}
+  .arch-swipe .as-rail-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;
+    background:linear-gradient(to right,rgba(255,255,255,0),var(--white));pointer-events:none;
+    opacity:1;transition:opacity .3s var(--ease)}
+  .arch-swipe .as-rail-wrap.scrolled-end::after{opacity:0}
   .arch-swipe .as-rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:2px 0 8px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .arch-swipe .as-rail::-webkit-scrollbar{display:none}
@@ -2169,11 +2183,6 @@ function makeHalftone(canvas, mount, host, opts){
     <div class="arch-swipe">
       <p class="eyebrow" style="color:var(--ink-400)">Built different</p>
       <h3 style="font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px">One platform, five layers</h3>
-      <div class="as-swipe-hint" aria-hidden="true">
-        <span class="as-hint-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.8-5.9-2.3L3.8 17.3a1.5 1.5 0 0 1 2.1-2.1L8 17.2V9a2 2 0 0 1 2-2"/></svg> Interactive</span>
-        <span>Tap layers below or swipe cards horizontally</span>
-        <span class="as-hint-arr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-      </div>
       <div class="as-diagram" id="as-diagram" role="tablist" aria-label="Architecture layers">
         <div class="as-node on" role="tab" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg><span>People</span></div>
         <div class="as-node" role="tab" aria-selected="false" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Security</span></div>
@@ -2181,7 +2190,9 @@ function makeHalftone(canvas, mount, host, opts){
         <div class="as-node" role="tab" aria-selected="false" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 .7-3.7 3.5.9 5.3L12 15l-4.2 2.5.9-5.3L5 8.7 10 8z"/></svg><span>AI</span></div>
         <div class="as-node" role="tab" aria-selected="false" tabindex="0"><svg viewBox="0 0 24 24"><path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg><span>Connect</span></div>
       </div>
-      <div class="as-rail" id="as-rail" tabindex="0" aria-label="Architecture steps, swipe horizontally"></div>
+      <div class="as-rail-wrap" id="as-rail-wrap">
+        <div class="as-rail" id="as-rail" tabindex="0" aria-label="Architecture steps, swipe horizontally"></div>
+      </div>
       <div class="as-dots" id="as-dots" role="tablist" aria-label="Step"></div>
     </div>
   </div>

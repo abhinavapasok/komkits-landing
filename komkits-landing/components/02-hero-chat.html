@@ -341,6 +341,7 @@
 </style>
 
 <section class="hero" id="hero">
+  <div class="halftone-mount" id="ht-hero-mount" aria-hidden="true"><canvas id="ht-hero"></canvas></div>
   <div class="hero-text">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
@@ -835,7 +836,23 @@
     });
   });
 
-  // initial cursor position
   setTimeout(() => moveCursorToTab('ai'), 800);
+
+  /* ===== hero halftone backdrop (ambient field + pointer proximity) ===== */
+  const mount=document.getElementById('ht-hero-mount');
+  if(mount && typeof makeHalftone==='function'){
+    makeHalftone(document.getElementById('ht-hero'), mount, mount.parentElement, {
+      gap:18, color:'rgba(17,18,20,.30)',
+      radiusAt(c,r,x,y,t,px,py,w,h){
+        const mx=x/w, my=y/h;
+        const mask=Math.max(0, mx*1.15-0.18) * Math.max(0, 1-my*1.05);
+        if(mask<=0.02) return 0;
+        const n=htNoise(c*0.16+t*0.35, r*0.16+t*0.22);
+        const d=Math.hypot(x-px,y-py);
+        const boost=Math.max(0,1-d/190);
+        return (0.4 + n*1.5)*mask + boost*boost*2.6;
+      }
+    });
+  }
 })();
 </script>

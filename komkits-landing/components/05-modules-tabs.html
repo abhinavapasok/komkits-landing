@@ -21,14 +21,12 @@
   .art-row .ic{width:30px;height:30px;border-radius:var(--radius);background:var(--grey-100);border:1px solid var(--grey-200);display:grid;place-items:center;flex:none}
   .art-row .ic svg{width:15px;height:15px;stroke:var(--ink-700)}
   .art-row b{font-weight:600}
-  .art-row .end{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-500);display:flex;align-items:center;gap:10px}
-  .mobile-swipe-guide{display:none}
-  @media (max-width:860px){
-    .tab-panel{grid-template-columns:1fr;gap:28px}
-    .mobile-swipe-guide{display:flex;align-items:center;justify-content:space-between;
-      background:var(--grey-50);border:1px solid var(--grey-200);border-radius:999px;
-      padding:6px 14px;margin:24px 0 -16px;font-size:11.5px;font-weight:600;color:var(--ink-700)}
-  }
+  .tabs-rail-wrap{position:relative}
+  .tabs-rail-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:48px;
+    background:linear-gradient(to right,rgba(255,255,255,0),var(--white));pointer-events:none;
+    opacity:1;transition:opacity .3s var(--ease)}
+  .tabs-rail-wrap.scrolled-end::after{opacity:0}
+  @media (max-width:860px){.tab-panel{grid-template-columns:1fr;gap:28px}}
 </style>
 
 <!-- ================= 4. modules tabs walkthrough (komkits-tabs-sample pattern) ================= -->
@@ -38,12 +36,8 @@
     <h2>A complete back office, out of the box</h2>
     <p class="lede">From the first sale to the final settlement — KomKits covers the full financial and operational loop of your business. Every feature is an independent module: use what you need, add more as you grow.</p>
 
-    <div class="mobile-swipe-guide" aria-hidden="true">
-      <span>👆 Tap or swipe tabs horizontally</span>
-      <span>↔</span>
-    </div>
-
-    <div class="tabs-rail" role="tablist" aria-label="Core modules" id="mod-rail">
+    <div class="tabs-rail-wrap" id="mod-rail-wrap">
+      <div class="tabs-rail" role="tablist" aria-label="Core modules" id="mod-rail">
       <button class="tab-btn active" role="tab" aria-selected="true" data-tab="t1"><span class="num">1</span>Sales Invoicing</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t2"><span class="num">2</span>Purchase Invoicing</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t3"><span class="num">3</span>Items</button>
@@ -51,6 +45,7 @@
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t5"><span class="num">5</span>Expense &amp; Income</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t6"><span class="num">6</span>Payments</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="t7"><span class="num">7</span>Staff &amp; Salary</button>
+      </div>
     </div>
 
     <div class="tab-panel active" id="t1" role="tabpanel">
@@ -151,5 +146,12 @@
   sec.addEventListener('pointerenter',()=>clearTimeout(timer));
   sec.addEventListener('pointerleave',arm);
   new IntersectionObserver(es=>es.forEach(e=>{e.isIntersecting?arm():clearTimeout(timer);}),{threshold:.3}).observe(sec);
+  const rail=document.getElementById('mod-rail'), wrap=document.getElementById('mod-rail-wrap');
+  if(rail && wrap){
+    rail.addEventListener('scroll',()=>{
+      const end=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-16;
+      wrap.classList.toggle('scrolled-end',end);
+    },{passive:true});
+  }
 })();
 </script>
