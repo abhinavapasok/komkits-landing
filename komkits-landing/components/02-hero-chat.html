@@ -143,7 +143,15 @@
     white-space:nowrap;
     box-shadow:0 1px 2px rgba(16,185,129,0.08);
   }
-  .app-sync-dot{width:6px;height:6px;border-radius:50%;background:#10B981}
+  .app-sync-dot{
+    width:7px;height:7px;border-radius:50%;background:#10B981;
+    box-shadow:0 0 0 3px rgba(16,185,129,0.25);
+    animation:syncPulse 2s infinite ease-in-out;
+  }
+  @keyframes syncPulse{
+    0%,100%{transform:scale(1);opacity:1;box-shadow:0 0 0 3px rgba(16,185,129,0.25)}
+    50%{transform:scale(1.2);opacity:0.85;box-shadow:0 0 0 6px rgba(16,185,129,0.12)}
+  }
 
   /* ---- tab views container ---- */
   .app-views{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column}
@@ -152,11 +160,11 @@
     flex:1;
     flex-direction:column;
     padding:24px 28px;
-    animation:fadeInPanel .22s ease-out;
+    animation:fadeInPanel .28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .module-panel.active{display:flex}
   @keyframes fadeInPanel{
-    from{opacity:0;transform:translateY(4px)}
+    from{opacity:0;transform:translateY(8px)}
     to{opacity:1;transform:translateY(0)}
   }
 
@@ -778,11 +786,56 @@
     }
   }
 
+  // --- Autonomous Live Interactive Hero Showcase Loop ---
+  const tabsOrder = ['ai', 'form', 'invoices', 'inventory', 'payments'];
+  let currentIdx = 0;
+  let autoPlay = true;
+
+  function moveCursorToTab(tabId){
+    if(!vcursor) return;
+    const targetBtn = document.querySelector(`.app-nav-btn[data-tab="${tabId}"]`);
+    if(!targetBtn) return;
+    const cardEl = document.querySelector('.chat-card');
+    if(!cardEl) return;
+
+    const btnRect = targetBtn.getBoundingClientRect();
+    const cardRect = cardEl.getBoundingClientRect();
+    const x = btnRect.left - cardRect.left + 18;
+    const y = btnRect.top - cardRect.top + 18;
+
+    vcursor.style.display = 'block';
+    vcursor.style.opacity = '1';
+    vcursor.style.transform = `translate(${x}px, ${y}px)`;
+
+    const tag = document.getElementById('vcursorTag');
+    if(tag) tag.textContent = titles[tabId];
+  }
+
+  function runDemoTour(){
+    if(!autoPlay) return;
+    currentIdx = (currentIdx + 1) % tabsOrder.length;
+    const nextTab = tabsOrder[currentIdx];
+
+    moveCursorToTab(nextTab);
+    setTimeout(() => {
+      if(!autoPlay) return;
+      switchTab(nextTab);
+    }, 650);
+  }
+
+  let tourTimer = setInterval(runDemoTour, 4200);
+
   navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      autoPlay = false;
+      clearInterval(tourTimer);
+      if(vcursor) vcursor.style.opacity = '0';
       const tabId = btn.getAttribute('data-tab');
       if(tabId) switchTab(tabId);
     });
   });
+
+  // initial cursor position
+  setTimeout(() => moveCursorToTab('ai'), 800);
 })();
 </script>
