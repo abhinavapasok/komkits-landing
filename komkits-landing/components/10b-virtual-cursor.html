@@ -110,6 +110,18 @@
 
   .vc-hint{position:absolute;right:14px;bottom:12px;font-size:11px;color:var(--ink-400);transition:opacity .4s var(--ease);background:var(--grey-100);padding:2px 6px;border-radius:4px}
   .vc-hint.off{opacity:0}
+
+  @media (max-width:640px){
+    .vc-stage{padding:14px 12px 46px}
+    .vc-hint{left:10px;right:10px;bottom:12px;text-align:center;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .d-hint{display:none}
+    .m-hint{display:inline !important}
+    .app{padding:12px 13px}
+    .billto{flex-wrap:wrap;gap:6px}
+    .item-row{padding:9px 0;gap:8px}
+    .item-row .amt{min-width:52px;font-size:12.5px}
+    .ai-bubble{font-size:10.5px;padding:4px 9px}
+  }
 </style>
 
 <!-- ================= 4c. virtual cursor card — "AI teammate" playable ================= -->
@@ -204,7 +216,10 @@
         <div class="v-ripple ai-rip" id="airip" aria-hidden="true"></div>
         <button class="ai-bubble" id="aibubble" data-act="ai-do" type="button" tabindex="-1"></button>
 
-        <p class="vc-hint" id="vc-hint">watching the AI demo — move your mouse in to take over</p>
+        <p class="vc-hint" id="vc-hint">
+          <span class="d-hint">watching the AI demo — move your mouse in to take over</span>
+          <span class="m-hint" style="display:none">watching the AI demo — tap any control to take over</span>
+        </p>
       </div>
 
       <div class="vc-meta">
@@ -491,7 +506,7 @@
     const rightSide = ax > stage.clientWidth*0.5;
     let bx = rightSide ? ax-bw-4 : ax+8;
     let by=ay-40, below=false;
-    if (ay < 52){ by = ay+26; below=true; }
+    if (ay < 28){ by = ay+22; below=true; } else if (ay < 52){ by = 10; below=false; }
     bx = Math.max(8, Math.min(bx, stage.clientWidth-bw-8));
     aiBub.classList.toggle('below', below);
     /* arrow points back toward the cursor: right edge when the bubble is left of it */
