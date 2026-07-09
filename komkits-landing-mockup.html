@@ -1896,63 +1896,64 @@ function makeHalftone(canvas, mount, host, opts){
   /* diagram — people nodes → security gate → hero core → branch wire → outbound; legend = only color (§7.1) */
   .diag{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:560px;margin-left:auto;width:100%}
   .d-layer{opacity:0;transform:translateY(16px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
-  .d-title{font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-400)}
-  .d-people{text-align:center}
-  .d-people .d-title{display:block;margin-bottom:12px}
-  .d-nodes{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-  .d-node{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;
-    background:var(--white);border:1px solid var(--grey-200);font-size:13px;font-weight:600;color:var(--ink-900);
-    box-shadow:var(--shadow-z1)}
-  .d-node svg{width:15px;height:15px;stroke:var(--ink-500)}
-  .d-gate{display:flex;align-items:center;gap:14px;padding:10px 18px 10px 12px;border-radius:999px;
-    border:1px dashed var(--ink-400);background:var(--white);transition:transform .5s var(--ease)}
-  .arch-pin.s2 .d-gate{transform:scale(1.03)}
-  .d-gate .g-ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
-    background:var(--grey-100);border:1px solid var(--grey-200)}
-  .d-gate .g-ic svg{width:17px;height:17px;stroke:var(--ink-700)}
-  .d-gate .g-items{display:flex;gap:4px 18px;flex-wrap:wrap;margin-top:3px}
-  .d-gate .g-items span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-700);font-weight:500}
-  .d-gate .g-items svg{width:12px;height:12px;stroke:var(--success);flex:none}
-  .d-core{border-radius:14px;padding:16px;position:relative;
+  .d-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500)}
+  .d-people{background:var(--white);border:1px solid var(--grey-200);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-z1)}
+  .d-people .d-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .d-nodes{display:flex;justify-content:flex-start;gap:8px;flex-wrap:wrap}
+  .d-node{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;
+    background:var(--grey-50);border:1px solid var(--grey-200);font-size:12.5px;font-weight:600;color:var(--ink-900)}
+  .d-node svg{width:15px;height:15px;stroke:var(--ink-700)}
+  .d-gate{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;
+    border:1px solid var(--grey-200);background:var(--grey-50);transition:transform .5s var(--ease)}
+  .arch-pin.s2 .d-gate{transform:scale(1.02);border-color:var(--ink-900);background:var(--white);box-shadow:var(--shadow-z1)}
+  .d-gate .g-ic{flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+    background:var(--ink-900);color:var(--white)}
+  .d-gate .g-ic svg{width:16px;height:16px;stroke:var(--white)}
+  .d-gate .g-items{display:flex;gap:6px 18px;flex-wrap:wrap;margin-top:2px}
+  .d-gate .g-items span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-900);font-weight:600}
+  .d-gate .g-items svg{width:13px;height:13px;stroke:var(--success);flex:none}
+  .d-core{border-radius:16px;padding:18px;position:relative;
     background:var(--white);border:1px solid var(--grey-200);box-shadow:var(--shadow-z2)}
-  .d-core-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-  .d-live{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-700)}
-  .d-live i{width:6px;height:6px;border-radius:50%;background:var(--ink-900);animation:liveDotPulse 2s ease-in-out infinite}
-  @keyframes liveDotPulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(17,18,20,.35)}
-    50%{box-shadow:0 0 0 4px rgba(17,18,20,0)}
-  }
+  .d-core-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .d-live{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-900);
+    padding:4px 10px;border-radius:999px;background:var(--grey-100);border:1px solid var(--grey-200)}
+  .d-live i{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(0,168,84,.18)}
   .d-mods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .d-mod{display:flex;flex-direction:column;gap:7px;padding:10px 10px 9px;border-radius:8px;
-    background:var(--grey-50);border:1px solid var(--grey-200);
-    font-size:11.5px;font-weight:600;color:var(--ink-900);line-height:1.25}
-  .d-mod svg{width:16px;height:16px;stroke:var(--ink-500)}
-  .d-mod.soon{border-style:dashed;border-color:var(--info-bd);background:var(--info-bg);color:var(--info)}
+  .d-mod{display:flex;flex-direction:column;gap:7px;padding:11px 10px 10px;border-radius:10px;
+    background:var(--white);border:1px solid var(--grey-200);
+    font-size:11.5px;font-weight:600;color:var(--ink-900);line-height:1.25;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+  .d-mod:hover{border-color:var(--ink-400);box-shadow:var(--shadow-z1)}
+  .d-mod svg{width:16px;height:16px;stroke:var(--ink-700)}
+  .d-mod.soon{border-style:dashed;border-color:var(--grey-300);background:var(--grey-50);color:var(--ink-700)}
   .d-mod.soon svg{stroke:var(--info)}
-  .d-ai-box{margin-top:10px;border-radius:10px;padding:12px 14px;
-    border:1px solid var(--grey-200);background:var(--grey-50);
-    transition:border-color .5s var(--ease),background .5s var(--ease),box-shadow .5s var(--ease)}
-  .d-ai-box .d-title{display:block;margin-bottom:9px;transition:color .5s var(--ease)}
+  .d-ai-box{margin-top:12px;border-radius:12px;padding:14px 16px;
+    border:1px solid #262626;background:#141414;color:#FFFFFF;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);
+    transition:border-color .5s var(--ease),box-shadow .5s var(--ease)}
+  .d-ai-box .d-title{display:flex;align-items:center;gap:8px;margin-bottom:11px;color:#FFFFFF;font-size:11px}
+  .d-ai-box .d-title i{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
   .d-ai-cells{display:flex;gap:8px;flex-wrap:wrap}
-  .d-ai-cell{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--success);
-    padding:7px 12px;border-radius:999px;background:var(--white);border:1px solid var(--success-bd)}
+  .d-ai-cell{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#FFFFFF;
+    padding:7px 13px;border-radius:8px;background:#262626;border:1px solid #3F3F46}
   .d-ai-cell svg{width:13px;height:13px;stroke:var(--success);flex:none}
-  .arch-pin.s4 .d-ai-box,.arch-pin.s5 .d-ai-box{border-color:var(--success-bd);background:var(--success-bg);
-    box-shadow:0 0 0 3px rgba(0,168,84,.10)}
-  .arch-pin.s4 .d-ai-box .d-title,.arch-pin.s5 .d-ai-box .d-title{color:var(--success)}
-  .d-o-card{border-radius:12px;padding:14px 16px;
+  .arch-pin.s4 .d-ai-box,.arch-pin.s5 .d-ai-box{border-color:#3F3F46;
+    box-shadow:0 12px 28px rgba(0,0,0,.28), 0 0 0 1px rgba(0,168,84,.3)}
+  .d-o-card{border-radius:14px;padding:15px 16px;
     background:var(--white);border:1px solid var(--grey-200);box-shadow:var(--shadow-z1)}
-  .d-o-card .d-title{display:flex;align-items:center;gap:7px;margin-bottom:10px}
-  .d-o-card .d-title svg{width:13px;height:13px;stroke:var(--ink-400);flex:none}
+  .d-o-card .d-title{display:flex;align-items:center;gap:7px;margin-bottom:11px}
+  .d-o-card .d-title svg{width:14px;height:14px;stroke:var(--ink-700);flex:none}
   .d-chips{display:flex;gap:7px;flex-wrap:wrap}
-  .d-chip{font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px}
-  .d-chip.ai{color:var(--success);background:var(--success-bg);border:1px solid var(--success-bd)}
-  .d-chip.soon{color:var(--info);background:var(--info-bg);border:1px solid var(--info-bd)}
-  .d-wire{height:38px;display:flex;justify-content:center}
+  .d-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;
+    color:var(--ink-900);background:var(--grey-50);border:1px solid var(--grey-200)}
+  .d-chip i{width:6px;height:6px;border-radius:50%;flex:none}
+  .d-chip.ai i{background:var(--success)}
+  .d-chip.soon i{background:var(--info)}
+  .d-wire{height:28px;display:flex;justify-content:center}
   .d-wire svg{height:100%;width:20px;overflow:visible}
   .d-wire.branch svg{width:100%}
-  .d-wire path{stroke:rgba(17,18,20,.3);stroke-width:1.5;fill:none;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .7s var(--ease)}
-  .d-wire .beam{opacity:0;transition:opacity .4s var(--ease);filter:drop-shadow(0 0 3px rgba(17,18,20,.35))}
+  .d-wire path{stroke:rgba(17,18,20,.22);stroke-width:1.5;fill:none;stroke-dasharray:3 3;stroke-dashoffset:0}
+  .d-wire .beam{opacity:0;transition:opacity .4s var(--ease)}
 
   /* ---- within-step sub-reveals — scrubbed via --sub (0→1 within the active step) and --i (stagger index) ---- */
   .arch-pin.s1 .d-node{
@@ -2040,8 +2041,8 @@ function makeHalftone(canvas, mount, host, opts){
   .arch-track.static .d-layer{opacity:1;transform:none}
   .arch-track.static .d-wire path{stroke-dashoffset:0}
   .arch-track.static .d-wire .beam{opacity:1}
-  .arch-track.static .d-ai-box{border-color:var(--success-bd);background:var(--success-bg)}
-  .arch-track.static .d-ai-box .d-title{color:var(--success)}
+  .arch-track.static .d-ai-box{border-color:#262626;background:#141414;color:#FFFFFF}
+  .arch-track.static .d-ai-box .d-title{color:#FFFFFF}
   .arch-track.static .d-node,.arch-track.static .g-items span,.arch-track.static .d-mod,
   .arch-track.static .d-ai-cell,.arch-track.static .d-chip{opacity:1;transform:none}
   @media (max-width:900px){
@@ -2119,14 +2120,17 @@ function makeHalftone(canvas, mount, host, opts){
 
       <div class="diag" aria-label="KomKits platform architecture">
         <div class="d-layer dl-users d-people">
-          <span class="d-title">Your people</span>
+          <div class="d-head">
+            <span class="d-title">Your people</span>
+            <span class="d-live"><i aria-hidden="true"></i>Live today</span>
+          </div>
           <div class="d-nodes">
             <span class="d-node" style="--i:0"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Business owner</span>
             <span class="d-node" style="--i:1"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Your staff</span>
             <span class="d-node" style="--i:2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="15" height="10" rx="1"/><path d="M6 18h5"/><rect x="18" y="8" width="5" height="12" rx="1"/></svg>Web &amp; mobile</span>
           </div>
         </div>
-        <div class="d-wire dw-1" aria-hidden="true"><svg viewBox="0 0 20 34" preserveAspectRatio="none"><path d="M10 0v34" pathLength="1"/><circle class="beam" r="2.4" fill="#3F3F46"><animateMotion dur="2.2s" repeatCount="indefinite" path="M10 0v34"/></circle></svg></div>
+        <div class="d-wire dw-1" aria-hidden="true"><svg viewBox="0 0 20 28" preserveAspectRatio="none"><path d="M10 0v28" pathLength="1"/><circle class="beam" r="2.4" fill="#262626"><animateMotion dur="2.2s" repeatCount="indefinite" path="M10 0v28"/></circle></svg></div>
         <div class="d-layer dl-sec d-gate">
           <span class="g-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
           <div class="g-meta">
@@ -2138,7 +2142,7 @@ function makeHalftone(canvas, mount, host, opts){
             </div>
           </div>
         </div>
-        <div class="d-wire dw-2" aria-hidden="true"><svg viewBox="0 0 20 34" preserveAspectRatio="none"><path d="M10 0v34" pathLength="1"/><circle class="beam" r="2.4" fill="#3F3F46"><animateMotion dur="2.2s" begin="0.7s" repeatCount="indefinite" path="M10 0v34"/></circle></svg></div>
+        <div class="d-wire dw-2" aria-hidden="true"><svg viewBox="0 0 20 28" preserveAspectRatio="none"><path d="M10 0v28" pathLength="1"/><circle class="beam" r="2.4" fill="#262626"><animateMotion dur="2.2s" begin="0.7s" repeatCount="indefinite" path="M10 0v28"/></circle></svg></div>
         <div class="d-layer dl-core d-core">
           <div class="d-core-head">
             <span class="d-title">KomKits core</span>
@@ -2155,7 +2159,7 @@ function makeHalftone(canvas, mount, host, opts){
             <span class="d-mod soon" style="--i:7"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 0 1 4 4v5.5"/></svg>Workflows — soon</span>
           </div>
           <div class="d-ai-box">
-            <span class="d-title">AI engine — built into the core</span>
+            <span class="d-title"><i aria-hidden="true"></i>AI engine — built into the core</span>
             <div class="d-ai-cells">
               <span class="d-ai-cell" style="--i:0"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L19 3.4M15 5l4 4"/></svg>Bring your own key</span>
               <span class="d-ai-cell" style="--i:1"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0V8zM12 17v5"/></svg>MCP server</span>
@@ -2163,20 +2167,28 @@ function makeHalftone(canvas, mount, host, opts){
             </div>
           </div>
         </div>
-        <div class="d-wire dw-3 branch" aria-hidden="true"><svg viewBox="0 0 560 38" preserveAspectRatio="none">
-          <path d="M280 0v8C280 24 140 16 140 38" pathLength="1"/>
-          <path d="M280 0v8C280 24 420 16 420 38" pathLength="1"/>
-          <circle class="beam" r="2.4" fill="#3F3F46"><animateMotion dur="2.2s" begin="0.3s" repeatCount="indefinite" path="M280 0v8C280 24 140 16 140 38"/></circle>
-          <circle class="beam" r="2.4" fill="#3F3F46"><animateMotion dur="2.2s" begin="1.4s" repeatCount="indefinite" path="M280 0v8C280 24 420 16 420 38"/></circle>
+        <div class="d-wire dw-3 branch" aria-hidden="true"><svg viewBox="0 0 560 28" preserveAspectRatio="none">
+          <path d="M280 0v8C280 20 140 14 140 28" pathLength="1"/>
+          <path d="M280 0v8C280 20 420 14 420 28" pathLength="1"/>
+          <circle class="beam" r="2.4" fill="#262626"><animateMotion dur="2.2s" begin="0.3s" repeatCount="indefinite" path="M280 0v8C280 20 140 14 140 28"/></circle>
+          <circle class="beam" r="2.4" fill="#262626"><animateMotion dur="2.2s" begin="1.4s" repeatCount="indefinite" path="M280 0v8C280 20 420 14 420 28"/></circle>
         </svg></div>
         <div class="d-out">
           <div class="d-layer dl-mcp d-o-card">
             <span class="d-title"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Talks to your AI apps</span>
-            <div class="d-chips"><span class="d-chip ai">ChatGPT</span><span class="d-chip ai">Claude</span><span class="d-chip ai">Any MCP assistant</span></div>
+            <div class="d-chips">
+              <span class="d-chip ai"><i aria-hidden="true"></i>ChatGPT</span>
+              <span class="d-chip ai"><i aria-hidden="true"></i>Claude</span>
+              <span class="d-chip ai"><i aria-hidden="true"></i>Any MCP assistant</span>
+            </div>
           </div>
           <div class="d-layer dl-comm d-o-card">
             <span class="d-title"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Commerce — coming soon</span>
-            <div class="d-chips"><span class="d-chip soon">Shopify</span><span class="d-chip soon">WooCommerce</span><span class="d-chip soon">WhatsApp</span></div>
+            <div class="d-chips">
+              <span class="d-chip soon"><i aria-hidden="true"></i>Shopify</span>
+              <span class="d-chip soon"><i aria-hidden="true"></i>WooCommerce</span>
+              <span class="d-chip soon"><i aria-hidden="true"></i>WhatsApp</span>
+            </div>
           </div>
         </div>
         <div class="d-legend" aria-hidden="false">
