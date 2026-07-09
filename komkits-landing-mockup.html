@@ -1110,7 +1110,6 @@ function makeHalftone(canvas, mount, host, opts){
 
 <script>
 (() => {
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const navBtns = document.querySelectorAll('.app-nav-btn');
   const panels = document.querySelectorAll('.module-panel');
   const breadcrumb = document.getElementById('headerBreadcrumb');
@@ -1134,7 +1133,6 @@ function makeHalftone(canvas, mount, host, opts){
     if(breadcrumb && titles[tabId]){
       breadcrumb.innerHTML = `KomKits <span>›</span> ${titles[tabId]}`;
     }
-    // hide virtual cursor when not on AI tab
     if(vcursor){
       vcursor.style.display = (tabId === 'ai') ? 'block' : 'none';
     }
