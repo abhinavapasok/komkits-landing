@@ -59,6 +59,7 @@
   img,svg{max-width:100%}
   .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
   section{padding:88px 0}
+  @media(max-width:640px){.wrap{padding:0 16px}section{padding:64px 0}}
   .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-500);margin-bottom:14px}
   h1,h2{letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
   h2{font-size:clamp(28px,4vw,40px);font-weight:800}
@@ -1308,40 +1309,50 @@ function makeHalftone(canvas, mount, host, opts){
 <!-- ═══════════ component: 04-before-after.html ═══════════ -->
 <style>
   /* ================= before / after slider (lab §12) ================= */
-  .ba{position:relative;border:1px solid var(--grey-200);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-z1);
-    height:420px;user-select:none;touch-action:none;--split:50%}
-  .ba-pane{position:absolute;inset:0;padding:28px}
+  .ba{position:relative;border:1px solid var(--grey-200);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-z1);
+    height:500px;user-select:none;touch-action:none;--split:50%}
+  .ba-pane{position:absolute;inset:0;padding:32px}
   .ba-before{background:var(--grey-100)}
   .ba-after{background:var(--white);clip-path:inset(0 0 0 var(--split))}
   .ba-tag{position:absolute;top:16px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-    padding:4px 10px;border-radius:999px;background:var(--ink-900);color:var(--white)}
+    padding:5px 12px;border-radius:999px;background:var(--ink-900);color:var(--white);z-index:10}
   .ba-before .ba-tag{left:16px;background:var(--ink-400)}
   .ba-after .ba-tag{right:16px}
   .ba-divider{position:absolute;top:0;bottom:0;left:var(--split);width:2px;background:var(--ink-900);transform:translateX(-1px)}
   .ba-handle{position:absolute;top:50%;left:var(--split);transform:translate(-50%,-50%);
-    width:44px;height:44px;border-radius:50%;background:var(--ink-900);color:var(--white);
+    width:48px;height:48px;border-radius:50%;background:var(--ink-900);color:var(--white);
     display:grid;place-items:center;cursor:ew-resize;box-shadow:var(--shadow-z2);border:2px solid var(--white);
     transition:opacity .25s var(--ease),transform .25s var(--ease)}
   .ba-handle.docked{opacity:0;transform:translate(-50%,-50%) scale(0.3);pointer-events:none}
   .ba-handle svg{width:18px;height:18px}
   /* before: the mess */
   .mess{position:relative;height:100%;filter:grayscale(1)}
-  .mess .note{position:absolute;background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);
-    padding:10px 14px;font-size:13px;color:var(--ink-500);box-shadow:var(--shadow-z1);font-weight:500}
-  .mess .note b{display:block;color:var(--ink-700);font-size:12px;margin-bottom:2px}
+  .mess .note{position:absolute;background:var(--white);border:1px solid var(--grey-200);border-radius:10px;
+    padding:11px 15px;font-size:13.5px;color:var(--ink-500);box-shadow:0 4px 14px rgba(0,0,0,0.06);font-weight:500}
+  .mess .note b{display:block;color:var(--ink-800);font-size:12.5px;margin-bottom:3px}
   /* after: mini dashboard */
-  .mini-dash{display:grid;grid-template-columns:120px 1fr;gap:14px;height:100%;padding-top:34px}
-  .mini-side{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:12px 10px;display:flex;flex-direction:column;gap:8px}
+  .mini-dash{display:grid;grid-template-columns:135px 1fr;gap:20px;height:100%;padding-top:40px}
+  .mini-side{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;gap:10px}
   .mini-side i{display:block;height:9px;border-radius:99px;background:var(--grey-200)}
   .mini-side i:first-child{background:var(--ink-900);width:70%}
-  .mini-main{display:flex;flex-direction:column;gap:14px;min-width:0}
-  .mini-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .mini-card{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:10px}
+  .mini-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .mini-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .mini-card{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:10px;padding:14px 16px}
   .mini-card i{display:block;height:7px;width:60%;border-radius:99px;background:var(--grey-200);margin-bottom:8px}
-  .mini-card b{font-size:15px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-  .mini-chart{flex:1;display:flex;align-items:flex-end;gap:8px;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:14px}
+  .mini-card b{font-size:18px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink-900)}
+  .mini-chart{flex:1;display:flex;align-items:flex-end;gap:10px;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:10px;padding:18px;min-height:160px}
   .mini-chart i{flex:1;background:var(--ink-700);border-radius:3px 3px 0 0;min-height:8%}
-  @media (max-width:720px){.ba{height:360px}.mini-cards{grid-template-columns:1fr 1fr}}
+  @media (max-width:768px){
+    .ba{height:470px}
+    .ba-pane{padding:24px 18px}
+    .mini-dash{grid-template-columns:1fr;gap:14px;padding-top:44px}
+    .mini-side{display:none}
+    .mini-cards{grid-template-columns:repeat(2,1fr);gap:12px}
+    .mini-card{padding:14px 16px}
+    .mini-card b{font-size:17px}
+    .mini-chart{padding:16px;min-height:155px;gap:8px}
+    .mess .note{padding:10px 13px;font-size:13px}
+  }
 
   /* ---------- virtual cursor for before/after slider ---------- */
   @media (hover:hover) and (pointer:fine){ .ba{cursor:none} .ba *{cursor:none} }
@@ -1381,12 +1392,12 @@ function makeHalftone(canvas, mount, host, opts){
       <div class="ba-pane ba-before" aria-hidden="true">
         <span class="ba-tag">Before — 5 apps + Excel</span>
         <div class="mess">
-          <div class="note" style="top:52px;left:4%;transform:rotate(-2deg)"><b>sales_final_v7.xlsx</b>last edited… who knows</div>
-          <div class="note" style="top:120px;left:34%;transform:rotate(1.5deg)"><b>WhatsApp orders</b>scroll up to find them</div>
-          <div class="note" style="top:210px;left:10%;transform:rotate(2deg)"><b>Paper ledger</b>udhaar page 43</div>
-          <div class="note" style="top:190px;left:52%;transform:rotate(-1deg)"><b>Billing app</b>doesn’t talk to stock</div>
-          <div class="note" style="top:290px;left:28%;transform:rotate(-2.5deg)"><b>Reminders app</b>“follow up Sharma!!”</div>
-          <div class="note" style="top:70px;left:62%;transform:rotate(2.5deg)"><b>Calculator</b>GST, again</div>
+          <div class="note" style="top:54px;left:4%;transform:rotate(-2deg)"><b>sales_final_v7.xlsx</b>last edited… who knows</div>
+          <div class="note" style="top:136px;left:36%;transform:rotate(1.5deg)"><b>WhatsApp orders</b>scroll up to find them</div>
+          <div class="note" style="top:246px;left:8%;transform:rotate(2deg)"><b>Paper ledger</b>udhaar page 43</div>
+          <div class="note" style="top:220px;left:52%;transform:rotate(-1deg)"><b>Billing app</b>doesn’t talk to stock</div>
+          <div class="note" style="top:342px;left:26%;transform:rotate(-2.5deg)"><b>Reminders app</b>“follow up Sharma!!”</div>
+          <div class="note" style="top:64px;left:64%;transform:rotate(2.5deg)"><b>Calculator</b>GST, again</div>
         </div>
       </div>
       <div class="ba-pane ba-after" aria-hidden="true">
