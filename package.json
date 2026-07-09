@@ -1,0 +1,8 @@
+{
+  "name": "komkits-landing-mockup",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p public && cp komkits-landing-mockup.html public/index.html"
+  }
+}
