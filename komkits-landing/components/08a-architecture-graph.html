@@ -1,0 +1,163 @@
+<style>
+/* ================= architecture node-graph scrollytelling (dark, §11 alt) =================
+   Organic node graph on a dark surface. Wires draw on as you scroll, a pulse travels the
+   active wire, and workflow cross-links light at the end. Namespaced .ag-* so it never
+   collides with the light serpentine flow chart in 08-architecture.html.
+   Desktop: pinned 340vh scrub. Mobile: scroll-snap step carousel. Reduced-motion: full static. */
+  .ag-sec{background:#111214;color:#fff}
+  .ag-track{height:340vh;position:relative}
+  .ag-sticky{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+  .ag-sec .wrap{width:100%}
+  .ag-sec .eyebrow{color:rgba(255,255,255,.5)}
+  .ag-sec h2{color:#fff;margin:16px 0 40px;font-size:clamp(30px,4.4vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+  .ag-grid{display:grid;grid-template-columns:380px 1fr;gap:64px;align-items:center;width:100%}
+  .ag-steps{display:flex;flex-direction:column;gap:4px}
+  .ag-step{padding:16px 18px;border-radius:8px;border:1px solid transparent;transition:background .4s var(--ease),border-color .4s var(--ease)}
+  .ag-step .n{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em}
+  .ag-step h4{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:4px 0;color:rgba(255,255,255,.55);transition:color .4s var(--ease)}
+  .ag-step p{font-size:13px;line-height:1.5;color:rgba(255,255,255,.35);max-height:0;overflow:hidden;opacity:0;transition:max-height .45s var(--ease),opacity .45s var(--ease)}
+  .ag-step.on{background:#1E1E1E;border-color:rgba(255,255,255,.09)}
+  .ag-step.on h4{color:#fff}
+  .ag-step.on p{max-height:80px;opacity:1}
+  .ag-visual{position:relative}
+  .ag-svg{width:100%;height:auto}
+  .ag-box{fill:#1E1E1E;stroke:rgba(255,255,255,.14)}
+  .ag-lbl{font-family:'Public Sans',system-ui,sans-serif;font-size:12px;font-weight:700;fill:rgba(255,255,255,.9)}
+  .ag-sub{font-family:'Public Sans',system-ui,sans-serif;font-size:8.5px;font-weight:600;fill:rgba(255,255,255,.35);letter-spacing:.08em}
+  .ag-node{opacity:.18;transition:opacity .5s var(--ease),transform .5s var(--ease)}
+  .ag-node.lit{opacity:1}
+  .ag-node.hot{transform:translateY(-3px)}
+  .ag-wire{stroke:rgba(255,255,255,.16);stroke-width:1.5;fill:none}
+  .ag-draw{stroke:rgba(255,255,255,.75);stroke-width:1.5;fill:none}
+  .ag-pulse{fill:#31D07F}
+  .ag-wf{stroke:#00A2AE;stroke-width:1.2;fill:none;stroke-dasharray:4 5;opacity:0;transition:opacity .5s var(--ease)}
+  .ag-wf.lit{opacity:.9;animation:ag-dash 1.2s linear infinite}
+  @keyframes ag-dash{to{stroke-dashoffset:-9}}
+  .ag-dots{display:none}
+  @media(max-width:900px){
+    .ag-track{height:auto}
+    .ag-sticky{position:static;min-height:0;display:block;padding:84px 0}
+    .ag-grid{display:block}
+    .ag-visual{margin-bottom:36px}
+    .ag-steps{flex-direction:row;overflow-x:auto;gap:12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 4px 16px;margin:0 -4px;scrollbar-width:none}
+    .ag-steps::-webkit-scrollbar{display:none}
+    .ag-step{flex:0 0 82%;scroll-snap-align:center;background:#1E1E1E;border-color:rgba(255,255,255,.09)}
+    .ag-step h4{color:rgba(255,255,255,.8)}
+    .ag-step p{max-height:none;opacity:1}
+    .ag-dots{display:flex;gap:8px;justify-content:center;margin-top:6px}
+    .ag-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s var(--ease),transform .3s var(--ease)}
+    .ag-dots i.on{background:#fff;transform:scale(1.15)}
+  }
+</style>
+
+<section class="ag-sec" id="ag-sec">
+  <div class="ag-track" id="ag-track">
+    <div class="ag-sticky">
+      <div class="wrap">
+        <p class="eyebrow">Built different</p>
+        <h2>Modular by Design.<br>Connected by Workflows.</h2>
+        <div class="ag-grid">
+          <div>
+            <div class="ag-steps" id="ag-steps">
+              <div class="ag-step"><span class="n">01</span><h4>Start with invoicing</h4><p>Create GST-ready sales invoices from day one. That's a complete system on its own.</p></div>
+              <div class="ag-step"><span class="n">02</span><h4>Add inventory</h4><p>Every invoice now moves stock automatically. Nothing to reconcile by hand.</p></div>
+              <div class="ag-step"><span class="n">03</span><h4>Connect payments</h4><p>Cash, bank and UPI accounts tie into every document. Pending amounts surface themselves.</p></div>
+              <div class="ag-step"><span class="n">04</span><h4>Bring in AI</h4><p>Ask questions across all of it — sales, stock, dues — in plain English.</p></div>
+              <div class="ag-step"><span class="n">05</span><h4>Automate with workflows</h4><p>Modules talk to each other. A sale updates stock, payments, and reports in one motion.</p></div>
+            </div>
+            <div class="ag-dots" id="ag-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="ag-visual">
+            <svg class="ag-svg" id="ag-svg" viewBox="0 0 640 520" fill="none" aria-label="KomKits module diagram: sales flows through invoice, inventory, payment, reports and AI, with workflow links closing the loop">
+              <path class="ag-wire" d="M150 96 C 240 96, 250 96, 320 130"/>
+              <path class="ag-wire" d="M320 166 C 320 200, 200 206, 160 240"/>
+              <path class="ag-wire" d="M198 268 C 300 268, 380 268, 470 268"/>
+              <path class="ag-wire" d="M500 296 C 500 340, 380 350, 330 384"/>
+              <path class="ag-wire" d="M300 420 C 280 460, 240 470, 190 470"/>
+              <path class="ag-draw" id="gd1" d="M150 96 C 240 96, 250 96, 320 130"/>
+              <path class="ag-draw" id="gd2" d="M320 166 C 320 200, 200 206, 160 240"/>
+              <path class="ag-draw" id="gd3" d="M198 268 C 300 268, 380 268, 470 268"/>
+              <path class="ag-draw" id="gd4" d="M500 296 C 500 340, 380 350, 330 384"/>
+              <path class="ag-draw" id="gd5" d="M300 420 C 280 460, 240 470, 190 470"/>
+              <path class="ag-wf" id="gwf1" d="M96 124 C 60 220, 60 380, 132 452"/>
+              <path class="ag-wf" id="gwf2" d="M540 240 C 600 160, 480 96, 180 80"/>
+              <g class="ag-node" id="gn0"><rect x="42" y="68" width="108" height="56" class="ag-box" rx="10"/><text x="96" y="93" text-anchor="middle" class="ag-lbl">Sales</text><text x="96" y="108" text-anchor="middle" class="ag-sub">ORDERS IN</text></g>
+              <g class="ag-node" id="gn1"><rect x="262" y="112" width="116" height="56" class="ag-box" rx="10"/><text x="320" y="137" text-anchor="middle" class="ag-lbl">Invoice</text><text x="320" y="152" text-anchor="middle" class="ag-sub">GST READY</text></g>
+              <g class="ag-node" id="gn2"><rect x="82" y="240" width="116" height="56" class="ag-box" rx="10"/><text x="140" y="265" text-anchor="middle" class="ag-lbl">Inventory</text><text x="140" y="280" text-anchor="middle" class="ag-sub">AUTO SYNC</text></g>
+              <g class="ag-node" id="gn3"><rect x="442" y="240" width="116" height="56" class="ag-box" rx="10"/><text x="500" y="265" text-anchor="middle" class="ag-lbl">Payment</text><text x="500" y="280" text-anchor="middle" class="ag-sub">CASH · BANK · UPI</text></g>
+              <g class="ag-node" id="gn4"><rect x="262" y="368" width="116" height="56" class="ag-box" rx="10"/><text x="320" y="393" text-anchor="middle" class="ag-lbl">Reports</text><text x="320" y="408" text-anchor="middle" class="ag-sub">LIVE</text></g>
+              <g class="ag-node" id="gn5"><rect x="82" y="442" width="108" height="56" class="ag-box" rx="10"/><text x="136" y="467" text-anchor="middle" class="ag-lbl">AI</text><text x="136" y="482" text-anchor="middle" class="ag-sub">ASK ANYTHING</text></g>
+              <circle class="ag-pulse" id="ag-pulse" r="4" opacity="0"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* architecture node-graph — desktop pinned scrub · mobile step carousel · static floor
+   (shares global reduceMotion from 00-head) */
+(function(){
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const ramp=(p,a,b)=>clamp((p-a)/(b-a),0,1);
+  const track=document.getElementById('ag-track');
+  const stepsWrap=document.getElementById('ag-steps');
+  const steps=stepsWrap.querySelectorAll('.ag-step');
+  const dots=document.querySelectorAll('#ag-dots i');
+  const nodes=[],draws=[],lens=[];
+  for(let i=0;i<=5;i++)nodes.push(document.getElementById('gn'+i));
+  for(let j=1;j<=5;j++){const d=document.getElementById('gd'+j);const L=d.getTotalLength();d.style.strokeDasharray=L;d.style.strokeDashoffset=L;draws.push(d);lens.push(L);}
+  const wf1=document.getElementById('gwf1'),wf2=document.getElementById('gwf2');
+  const pulse=document.getElementById('ag-pulse');
+  const isMobile=matchMedia('(max-width:900px)');
+  let activeIdx=-1;
+
+  function setStep(idx){
+    if(idx===activeIdx)return; activeIdx=idx;
+    steps.forEach((s,k)=>s.classList.toggle('on',k===idx));
+    dots.forEach((dt,k)=>dt.classList.toggle('on',k===idx));
+  }
+  function renderDiagram(p){
+    nodes[0].classList.add('lit');
+    for(let k=0;k<5;k++){
+      const w=ramp(p,0.04+k*0.16,0.16+k*0.16);
+      draws[k].style.strokeDashoffset=lens[k]*(1-w);
+      nodes[k+1].classList.toggle('lit',w>0.85);
+      nodes[k+1].classList.toggle('hot',w>0.85&&p<0.2+(k+1)*0.16);
+    }
+    const wf=p>0.86;
+    wf1.classList.toggle('lit',wf); wf2.classList.toggle('lit',wf);
+    const seg=clamp(Math.floor((p-0.04)/0.16),0,4);
+    const segP=ramp(p,0.04+seg*0.16,0.16+seg*0.16);
+    if(segP>0&&segP<1){const pt=draws[seg].getPointAtLength(lens[seg]*segP);pulse.setAttribute('cx',pt.x);pulse.setAttribute('cy',pt.y);pulse.setAttribute('opacity','1');}
+    else pulse.setAttribute('opacity','0');
+  }
+  function fullDiagram(){renderDiagram(1);nodes.forEach(n=>{n.classList.add('lit');n.classList.remove('hot');});pulse.setAttribute('opacity','0');}
+
+  if(reduceMotion){ fullDiagram(); setStep(0); steps.forEach(s=>s.classList.add('on')); return; }
+
+  function scrub(){
+    let ticking=false,active=false;
+    const prog=()=>{const r=track.getBoundingClientRect();const t=r.height-innerHeight;return t<=0?1:clamp(-r.top/t,0,1);};
+    const upd=()=>{ticking=false;if(!active)return;const p=prog();renderDiagram(p);setStep(clamp(Math.floor(p*5.4),0,4));};
+    const onScroll=()=>{if(!ticking){ticking=true;requestAnimationFrame(upd);}};
+    new IntersectionObserver(en=>en.forEach(x=>{active=x.isIntersecting;if(active){addEventListener('scroll',onScroll,{passive:true});upd();}else removeEventListener('scroll',onScroll);})).observe(track);
+    upd();
+  }
+  function mobile(){
+    fullDiagram(); setStep(0);
+    const mapNode=[1,2,3,5,4];let ticking=false;
+    stepsWrap.addEventListener('scroll',()=>{
+      if(ticking)return;ticking=true;
+      requestAnimationFrame(()=>{ticking=false;
+        const idx=clamp(Math.round(stepsWrap.scrollLeft/(steps[0].offsetWidth+12)),0,4);
+        setStep(idx);
+        nodes.forEach((n,k)=>n.classList.toggle('hot',k===mapNode[idx]));
+      });
+    },{passive:true});
+  }
+  if(isMobile.matches)mobile();else scrub();
+})();
+</script>

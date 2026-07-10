@@ -1,0 +1,72 @@
+<style>
+  /* ================= paper stack: the document lifecycle (§14) =================
+     Quotation → Purchase → Invoice → Return → Payment. Sheets overlap at rest; on
+     entry (touch) or hover (pointer) they fan out far enough that every type, number
+     and status chip reads at once. One physical metaphor, understated. */
+  .ps{background:var(--white)}
+  .ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  @media(max-width:900px){.ps-grid{grid-template-columns:1fr;gap:48px}}
+  .ps-zone{position:relative;height:400px;display:flex;align-items:center;justify-content:center}
+  .ps-sheet{position:absolute;width:250px;height:320px;background:var(--white);border:1px solid var(--grey-200);border-radius:8px;
+    box-shadow:0 4px 16px rgba(17,18,20,.06);padding:20px;display:flex;flex-direction:column;
+    transition:transform .7s var(--ease),box-shadow .7s var(--ease)}
+  .ps-type{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400)}
+  .ps-no{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:4px 0 14px}
+  .ps-line{height:5px;border-radius:2px;margin:6px 0;background:var(--grey-100)}
+  .ps-line.w60{width:60%}.ps-line.w80{width:80%}.ps-line.w40{width:40%}
+  .ps-sheet .chip{margin-top:auto;align-self:flex-start;opacity:0;transform:translateY(4px);transition:opacity .5s var(--ease) .3s,transform .5s var(--ease) .3s}
+  .ps-sheet:nth-child(1){transform:rotate(-4deg) translate(-10px,6px);z-index:1}
+  .ps-sheet:nth-child(2){transform:rotate(-2deg) translate(-4px,2px);z-index:2}
+  .ps-sheet:nth-child(3){transform:rotate(0deg);z-index:3}
+  .ps-sheet:nth-child(4){transform:rotate(2deg) translate(5px,3px);z-index:4}
+  .ps-sheet:nth-child(5){transform:rotate(4deg) translate(11px,7px);z-index:5}
+  .ps-zone.spread .ps-sheet:nth-child(1){transform:rotate(-13deg) translate(-184px,22px);box-shadow:var(--shadow-z2)}
+  .ps-zone.spread .ps-sheet:nth-child(2){transform:rotate(-6.5deg) translate(-94px,5px);box-shadow:var(--shadow-z2)}
+  .ps-zone.spread .ps-sheet:nth-child(3){transform:rotate(0deg) translateY(-16px);box-shadow:0 24px 58px rgba(17,18,20,.16)}
+  .ps-zone.spread .ps-sheet:nth-child(4){transform:rotate(6.5deg) translate(94px,5px);box-shadow:var(--shadow-z2)}
+  .ps-zone.spread .ps-sheet:nth-child(5){transform:rotate(13deg) translate(184px,22px);box-shadow:var(--shadow-z2)}
+  .ps-zone.spread .ps-sheet .chip{opacity:1;transform:none}
+  @media(max-width:640px){
+    .ps-zone{height:360px}
+    .ps-sheet{width:190px;height:260px}
+    .ps-zone.spread .ps-sheet:nth-child(1){transform:rotate(-12deg) translate(-104px,18px)}
+    .ps-zone.spread .ps-sheet:nth-child(2){transform:rotate(-6deg) translate(-52px,4px)}
+    .ps-zone.spread .ps-sheet:nth-child(4){transform:rotate(6deg) translate(52px,4px)}
+    .ps-zone.spread .ps-sheet:nth-child(5){transform:rotate(12deg) translate(104px,18px)}
+  }
+</style>
+
+<section class="ps" aria-labelledby="ps-title">
+  <div class="wrap ps-grid">
+    <div>
+      <p class="eyebrow reveal">One document system</p>
+      <h2 id="ps-title" class="reveal" style="--i:1">Every document, one lifecycle.</h2>
+      <p class="lede reveal" style="--i:2">Quotations become invoices. Purchases restock shelves. Returns settle cleanly. Payments close the loop. Each document knows where it came from — and what it changed.</p>
+    </div>
+    <div class="ps-zone reveal" id="ps-zone" style="--i:2">
+      <div class="ps-sheet"><span class="ps-type">Quotation</span><span class="ps-no">QTE-0013</span><div class="ps-line w80"></div><div class="ps-line w60"></div><div class="ps-line w80"></div><span class="chip"><span class="d"></span>Sent</span></div>
+      <div class="ps-sheet"><span class="ps-type">Purchase</span><span class="ps-no">PUR-0522</span><div class="ps-line w60"></div><div class="ps-line w80"></div><div class="ps-line w40"></div><span class="chip soon"><span class="d"></span>Received</span></div>
+      <div class="ps-sheet"><span class="ps-type">Invoice</span><span class="ps-no">INV-2041</span><div class="ps-line w80"></div><div class="ps-line w80"></div><div class="ps-line w60"></div><span class="chip live"><span class="d"></span>Paid</span></div>
+      <div class="ps-sheet"><span class="ps-type">Return</span><span class="ps-no">RET-0089</span><div class="ps-line w60"></div><div class="ps-line w40"></div><div class="ps-line w60"></div><span class="chip popular"><span class="d"></span>Processing</span></div>
+      <div class="ps-sheet"><span class="ps-type">Payment</span><span class="ps-no">PAY-1107</span><div class="ps-line w40"></div><div class="ps-line w60"></div><div class="ps-line w40"></div><span class="chip live"><span class="d"></span>Settled</span></div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* paper stack — fan on entry/hover (shares global reduceMotion from 00-head) */
+(function(){
+  const zone=document.getElementById('ps-zone');
+  if(reduceMotion){ zone.classList.add('spread'); return; }
+  const hoverable=matchMedia('(hover:hover)').matches;
+  new IntersectionObserver(es=>es.forEach(x=>{
+    if(hoverable){
+      if(x.isIntersecting){ zone.classList.add('spread'); setTimeout(()=>{ if(!zone.matches(':hover')) zone.classList.remove('spread'); },1900); }
+    } else zone.classList.toggle('spread',x.isIntersecting);
+  }),{threshold:.45}).observe(zone);
+  if(hoverable){
+    zone.addEventListener('mouseenter',()=>zone.classList.add('spread'));
+    zone.addEventListener('mouseleave',()=>zone.classList.remove('spread'));
+  }
+})();
+</script>

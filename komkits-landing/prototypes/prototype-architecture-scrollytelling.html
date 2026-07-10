@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KomKits · Modular Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+/* ============================================================
+   MODULAR ARCHITECTURE — pinned scroll-scrub diagram
+   Section 11 of the KomKits landing spec.
+   Desktop: 340vh pinned scrub. Mobile: scroll-snap carousel.
+   Root element: <section class="arch-sec">
+   ============================================================ */
+.arch-sec{background:var(--dark);color:#fff}
+.arch-track{height:340vh;position:relative}
+.arch-sticky{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+.arch-grid{display:grid;grid-template-columns:380px 1fr;gap:64px;align-items:center;width:100%}
+.arch-sec .eyebrow{color:rgba(255,255,255,.5)}
+.arch-sec .eyebrow::before{background:rgba(255,255,255,.3)}
+.arch-sec h2{color:#fff;margin:18px 0 40px}
+.arch-steps{display:flex;flex-direction:column;gap:4px}
+.arch-step{padding:16px 18px;border-radius:var(--r-md);border:1px solid transparent;transition:all .4s var(--ease)}
+.arch-step .n{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.08em}
+.arch-step h4{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:4px 0;color:rgba(255,255,255,.55);transition:color .4s var(--ease)}
+.arch-step p{font-size:13px;line-height:1.5;color:rgba(255,255,255,.35);max-height:0;overflow:hidden;opacity:0;transition:all .45s var(--ease)}
+.arch-step.on{background:var(--dark-3);border-color:rgba(255,255,255,.09)}
+.arch-step.on h4{color:#fff}
+.arch-step.on p{max-height:80px;opacity:1}
+.arch-visual{position:relative}
+.arch-svg{width:100%;height:auto}
+.an-box{fill:var(--dark-3);stroke:rgba(255,255,255,.14)}
+.an-lbl{font-family:var(--font);font-size:12px;font-weight:700;fill:rgba(255,255,255,.9)}
+.an-sub{font-family:var(--font);font-size:8.5px;font-weight:600;fill:rgba(255,255,255,.35);letter-spacing:.08em}
+.a-node{opacity:.18;transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.a-node.lit{opacity:1}
+.a-node.hot{transform:translateY(-3px)}
+.a-wire{stroke:rgba(255,255,255,.16);stroke-width:1.5;fill:none}
+.a-draw{stroke:rgba(255,255,255,.75);stroke-width:1.5;fill:none}
+.a-pulse{fill:var(--ok)}
+.a-wf{stroke:var(--info);stroke-width:1.2;fill:none;stroke-dasharray:4 5;opacity:0;transition:opacity .5s var(--ease)}
+.a-wf.lit{opacity:.9;animation:wf-dash 1.2s linear infinite}
+@keyframes wf-dash{to{stroke-dashoffset:-9}}
+.arch-mobile-dots{display:none}
+@media(max-width:900px){
+  .arch-track{height:auto}
+  .arch-sticky{position:static;min-height:0;display:block;padding:84px 0}
+  .arch-grid{display:block}
+  .arch-visual{margin-bottom:36px}
+  .arch-steps{flex-direction:row;overflow-x:auto;gap:12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 4px 16px;margin:0 -4px;scrollbar-width:none}
+  .arch-steps::-webkit-scrollbar{display:none}
+  .arch-step{flex:0 0 82%;scroll-snap-align:center;background:var(--dark-3);border-color:rgba(255,255,255,.09)}
+  .arch-step h4{color:rgba(255,255,255,.8)}
+  .arch-step p{max-height:none;opacity:1}
+  .arch-mobile-dots{display:flex;gap:8px;justify-content:center;margin-top:6px}
+  .arch-mobile-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s var(--ease)}
+  .arch-mobile-dots i.on{background:#fff;transform:scale(1.15)}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.001s!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div style="height:20vh;background:#fff"></div>
+
+<section class="arch-sec" id="archSec">
+  <div class="arch-track" id="archTrack">
+    <div class="arch-sticky">
+      <div class="wrap" style="width:100%">
+        <span class="eyebrow">Built Different</span>
+        <h2 class="h-section">Modular by Design.<br>Connected by Workflows.</h2>
+        <div class="arch-grid">
+          <div>
+            <div class="arch-steps" id="archSteps">
+              <div class="arch-step"><span class="n">01</span><h4>Start with invoicing</h4><p>Create GST-ready sales invoices from day one. That's a complete system on its own.</p></div>
+              <div class="arch-step"><span class="n">02</span><h4>Add inventory</h4><p>Every invoice now moves stock automatically. Nothing to reconcile by hand.</p></div>
+              <div class="arch-step"><span class="n">03</span><h4>Connect payments</h4><p>Cash, bank and UPI accounts tie into every document. Pending amounts surface themselves.</p></div>
+              <div class="arch-step"><span class="n">04</span><h4>Bring in AI</h4><p>Ask questions across all of it — sales, stock, dues — in plain English.</p></div>
+              <div class="arch-step"><span class="n">05</span><h4>Automate with workflows</h4><p>Modules talk to each other. A sale updates stock, payments, and reports in one motion.</p></div>
+            </div>
+            <div class="arch-mobile-dots" id="archDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="arch-visual">
+            <svg class="arch-svg" id="archSvg" viewBox="0 0 640 520" fill="none" aria-label="KomKits module diagram: sales flows through invoice, inventory, payment, reports and AI">
+              <path class="a-wire" d="M150 96 C 240 96, 250 96, 320 130"/>
+              <path class="a-wire" d="M320 166 C 320 200, 200 206, 160 240"/>
+              <path class="a-wire" d="M198 268 C 300 268, 380 268, 470 268"/>
+              <path class="a-wire" d="M500 296 C 500 340, 380 350, 330 384"/>
+              <path class="a-wire" d="M300 420 C 280 460, 240 470, 190 470"/>
+              <path class="a-draw" id="d1" d="M150 96 C 240 96, 250 96, 320 130"/>
+              <path class="a-draw" id="d2" d="M320 166 C 320 200, 200 206, 160 240"/>
+              <path class="a-draw" id="d3" d="M198 268 C 300 268, 380 268, 470 268"/>
+              <path class="a-draw" id="d4" d="M500 296 C 500 340, 380 350, 330 384"/>
+              <path class="a-draw" id="d5" d="M300 420 C 280 460, 240 470, 190 470"/>
+              <path class="a-wf" id="wf1" d="M96 124 C 60 220, 60 380, 132 452"/>
+              <path class="a-wf" id="wf2" d="M540 240 C 600 160, 480 96, 180 80"/>
+              <g class="a-node" id="n0"><rect x="42" y="68" width="108" height="56" class="an-box" rx="10"/><text x="96" y="93" text-anchor="middle" class="an-lbl">Sales</text><text x="96" y="108" text-anchor="middle" class="an-sub">ORDERS IN</text></g>
+              <g class="a-node" id="n1"><rect x="262" y="112" width="116" height="56" class="an-box" rx="10"/><text x="320" y="137" text-anchor="middle" class="an-lbl">Invoice</text><text x="320" y="152" text-anchor="middle" class="an-sub">GST READY</text></g>
+              <g class="a-node" id="n2"><rect x="82" y="240" width="116" height="56" class="an-box" rx="10"/><text x="140" y="265" text-anchor="middle" class="an-lbl">Inventory</text><text x="140" y="280" text-anchor="middle" class="an-sub">AUTO SYNC</text></g>
+              <g class="a-node" id="n3"><rect x="442" y="240" width="116" height="56" class="an-box" rx="10"/><text x="500" y="265" text-anchor="middle" class="an-lbl">Payment</text><text x="500" y="280" text-anchor="middle" class="an-sub">CASH · BANK · UPI</text></g>
+              <g class="a-node" id="n4"><rect x="262" y="368" width="116" height="56" class="an-box" rx="10"/><text x="320" y="393" text-anchor="middle" class="an-lbl">Reports</text><text x="320" y="408" text-anchor="middle" class="an-sub">LIVE</text></g>
+              <g class="a-node" id="n5"><rect x="82" y="442" width="108" height="56" class="an-box" rx="10"/><text x="136" y="467" text-anchor="middle" class="an-lbl">AI</text><text x="136" y="482" text-anchor="middle" class="an-sub">ASK ANYTHING</text></g>
+              <circle class="a-pulse" id="archPulse" r="4" opacity="0"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="height:40vh;background:#fff"></div>
+
+<script>
+(function(){
+'use strict';
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function ramp(p,a,b){return clamp((p-a)/(b-a),0,1);}
+
+var track=document.getElementById('archTrack');
+var stepsWrap=document.getElementById('archSteps');
+var steps=stepsWrap.querySelectorAll('.arch-step');
+var dots=document.querySelectorAll('#archDots i');
+var nodes=[],draws=[],lens=[];
+for(var i=0;i<=5;i++)nodes.push(document.getElementById('n'+i));
+for(var j=1;j<=5;j++){var d=document.getElementById('d'+j);var L=d.getTotalLength();d.style.strokeDasharray=L;d.style.strokeDashoffset=L;draws.push(d);lens.push(L);}
+var wf1=document.getElementById('wf1'),wf2=document.getElementById('wf2');
+var pulse=document.getElementById('archPulse');
+var isMobile=window.matchMedia('(max-width:900px)');
+var activeIdx=-1;
+
+function setStep(idx){
+  if(idx===activeIdx)return; activeIdx=idx;
+  steps.forEach(function(s,k){s.classList.toggle('on',k===idx);});
+  dots.forEach(function(dt,k){dt.classList.toggle('on',k===idx);});
+}
+function renderDiagram(p){
+  nodes[0].classList.add('lit');
+  for(var k=0;k<5;k++){
+    var w=ramp(p,0.04+k*0.16,0.16+k*0.16);
+    draws[k].style.strokeDashoffset=lens[k]*(1-w);
+    nodes[k+1].classList.toggle('lit',w>0.85);
+    nodes[k+1].classList.toggle('hot',w>0.85&&p<0.2+(k+1)*0.16);
+  }
+  var wf=p>0.86;
+  wf1.classList.toggle('lit',wf); wf2.classList.toggle('lit',wf);
+  var seg=clamp(Math.floor((p-0.04)/0.16),0,4);
+  var segP=ramp(p,0.04+seg*0.16,0.16+seg*0.16);
+  if(segP>0&&segP<1){var pt=draws[seg].getPointAtLength(lens[seg]*segP);pulse.setAttribute('cx',pt.x);pulse.setAttribute('cy',pt.y);pulse.setAttribute('opacity','1');}
+  else pulse.setAttribute('opacity','0');
+}
+function fullDiagram(){renderDiagram(1);nodes.forEach(function(n){n.classList.add('lit');n.classList.remove('hot');});pulse.setAttribute('opacity','0');}
+
+if(RM){fullDiagram();setStep(0);steps.forEach(function(s){s.classList.add('on');});return;}
+
+function scrub(){
+  var ticking=false,active=false;
+  function prog(){var r=track.getBoundingClientRect();var t=r.height-window.innerHeight;return t<=0?1:clamp(-r.top/t,0,1);}
+  function upd(){ticking=false;if(!active)return;var p=prog();renderDiagram(p);setStep(clamp(Math.floor(p*5.4),0,4));}
+  function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(upd);}}
+  new IntersectionObserver(function(en){en.forEach(function(x){active=x.isIntersecting;if(active){window.addEventListener('scroll',onScroll,{passive:true});upd();}else window.removeEventListener('scroll',onScroll);});}).observe(track);
+  upd();
+}
+function mobile(){
+  fullDiagram();setStep(0);
+  var mapNode=[1,2,3,5,4];var ticking=false;
+  stepsWrap.addEventListener('scroll',function(){
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(function(){ticking=false;
+      var idx=clamp(Math.round(stepsWrap.scrollLeft/(steps[0].offsetWidth+12)),0,4);
+      setStep(idx);
+      nodes.forEach(function(n,k){n.classList.toggle('hot',k===mapNode[idx]);});
+    });
+  },{passive:true});
+}
+if(isMobile.matches)mobile();else scrub();
+})();
+</script>
+</body>
+</html>

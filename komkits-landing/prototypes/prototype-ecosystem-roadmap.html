@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KomKits · E-Commerce Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+/* ============================================================
+   E-COMMERCE ROADMAP — connected ecosystem with data packets
+   Section 13 of the KomKits landing spec.
+   Root element: <section class="eco-sec">
+   ============================================================ */
+.sec{padding:130px 0}
+@media(max-width:900px){.sec{padding:84px 0}}
+.sec-head{max-width:760px;margin-bottom:56px}
+.sec-head .eyebrow{margin-bottom:20px}
+.sec-head h2{margin-bottom:20px}
+.eco-sec{background:var(--bg);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
+.eco-svg{width:100%;height:auto}
+.eco-box{fill:var(--wh);stroke:var(--bd)}
+.eco-box-hub{fill:var(--ink);stroke:var(--ink)}
+.eco-lbl{font-family:var(--font);font-size:12px;font-weight:700;fill:var(--ink)}
+.eco-lbl-w{font-family:var(--font);font-size:13px;font-weight:800;fill:#fff}
+.eco-sub{font-family:var(--font);font-size:8.5px;font-weight:600;fill:#9CA3AF;letter-spacing:.07em}
+.eco-sub-w{font-family:var(--font);font-size:8.5px;font-weight:600;fill:rgba(255,255,255,.5);letter-spacing:.07em}
+.eco-soon{font-family:var(--font);font-size:8px;font-weight:700;fill:#8a6d00;letter-spacing:.05em}
+.eco-soon-bg{fill:rgba(255,191,0,.14);stroke:rgba(255,191,0,.4)}
+.eco-wire{stroke:var(--bd);stroke-width:1.5;fill:none}
+.eco-pulse{stroke:var(--ok);stroke-width:1.5;fill:none;stroke-dasharray:12 320;stroke-dashoffset:332;opacity:0}
+.eco-sec.in .eco-pulse{opacity:1;animation:eco-run 3.4s linear infinite}
+.eco-pulse.p2{animation-delay:.9s}.eco-pulse.p3{animation-delay:1.7s}.eco-pulse.p4{animation-delay:2.5s}
+@keyframes eco-run{to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.eco-pulse{display:none}}
+</style>
+</head>
+<body>
+
+<section class="sec eco-sec" id="integrations">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">On the Roadmap</span>
+      <h2 class="h-section">Your Store. Your Chats. One&nbsp;Platform.</h2>
+      <p class="body-lg">Orders from your storefront and chats will flow straight into the same back office — invoices, stock and reports included.</p>
+    </div>
+    <div>
+      <svg class="eco-svg" viewBox="0 0 960 380" fill="none" aria-label="Roadmap: Shopify, WooCommerce and WhatsApp orders flow into KomKits, then to invoices, inventory, payments and AI reports">
+        <g><rect x="20" y="40" width="150" height="52" class="eco-box" rx="10"/><text x="95" y="63" text-anchor="middle" class="eco-lbl">Shopify</text><text x="95" y="77" text-anchor="middle" class="eco-sub">STOREFRONT</text><rect x="104" y="30" width="76" height="15" class="eco-soon-bg" rx="7"/><text x="142" y="41" text-anchor="middle" class="eco-soon">COMING SOON</text></g>
+        <g><rect x="20" y="164" width="150" height="52" class="eco-box" rx="10"/><text x="95" y="187" text-anchor="middle" class="eco-lbl">WooCommerce</text><text x="95" y="201" text-anchor="middle" class="eco-sub">STOREFRONT</text><rect x="104" y="154" width="76" height="15" class="eco-soon-bg" rx="7"/><text x="142" y="165" text-anchor="middle" class="eco-soon">COMING SOON</text></g>
+        <g><rect x="20" y="288" width="150" height="52" class="eco-box" rx="10"/><text x="95" y="311" text-anchor="middle" class="eco-lbl">WhatsApp</text><text x="95" y="325" text-anchor="middle" class="eco-sub">CHAT COMMERCE</text><rect x="104" y="278" width="76" height="15" class="eco-soon-bg" rx="7"/><text x="142" y="289" text-anchor="middle" class="eco-soon">COMING SOON</text></g>
+        <rect x="400" y="140" width="170" height="100" class="eco-box-hub" rx="12"/>
+        <text x="485" y="185" text-anchor="middle" class="eco-lbl-w">KomKits</text>
+        <text x="485" y="203" text-anchor="middle" class="eco-sub-w">ORDERS · BACK OFFICE</text>
+        <rect x="790" y="24" width="150" height="48" class="eco-box" rx="10"/><text x="865" y="45" text-anchor="middle" class="eco-lbl">Invoice</text><text x="865" y="59" text-anchor="middle" class="eco-sub">AUTO-CREATED</text>
+        <rect x="790" y="118" width="150" height="48" class="eco-box" rx="10"/><text x="865" y="139" text-anchor="middle" class="eco-lbl">Inventory</text><text x="865" y="153" text-anchor="middle" class="eco-sub">DEDUCTED</text>
+        <rect x="790" y="212" width="150" height="48" class="eco-box" rx="10"/><text x="865" y="233" text-anchor="middle" class="eco-lbl">Payment</text><text x="865" y="247" text-anchor="middle" class="eco-sub">RECONCILED</text>
+        <rect x="790" y="306" width="150" height="48" class="eco-box" rx="10"/><text x="865" y="327" text-anchor="middle" class="eco-lbl">AI Reports</text><text x="865" y="341" text-anchor="middle" class="eco-sub">UP TO DATE</text>
+        <path class="eco-wire" d="M170 66 C 300 66, 320 150, 400 168"/>
+        <path class="eco-wire" d="M170 190 H 400"/>
+        <path class="eco-wire" d="M170 314 C 300 314, 320 230, 400 212"/>
+        <path class="eco-wire" d="M570 162 C 690 140, 700 60, 790 48"/>
+        <path class="eco-wire" d="M570 178 C 690 170, 700 145, 790 142"/>
+        <path class="eco-wire" d="M570 202 C 690 210, 700 235, 790 236"/>
+        <path class="eco-wire" d="M570 218 C 690 240, 700 318, 790 330"/>
+        <path class="eco-pulse"    d="M170 66 C 300 66, 320 150, 400 168 M570 162 C 690 140, 700 60, 790 48" pathLength="332"/>
+        <path class="eco-pulse p2" d="M170 190 H 400 M570 178 C 690 170, 700 145, 790 142" pathLength="332"/>
+        <path class="eco-pulse p3" d="M170 314 C 300 314, 320 230, 400 212 M570 202 C 690 210, 700 235, 790 236" pathLength="332"/>
+        <path class="eco-pulse p4" d="M170 190 H 400 M570 218 C 690 240, 700 318, 790 330" pathLength="332"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+var sec=document.getElementById('integrations');
+if('IntersectionObserver' in window){
+  new IntersectionObserver(function(en){en.forEach(function(x){sec.classList.toggle('in',x.isIntersecting);});},{threshold:.2}).observe(sec);
+} else sec.classList.add('in');
+})();
+</script>
+</body>
+</html>

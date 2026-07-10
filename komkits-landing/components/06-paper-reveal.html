@@ -1,0 +1,147 @@
+<style>
+  /* ================= paper reveal: paperwork → structured data (scrub, §10) =================
+     One motion moment: a scanned invoice resolves to fields, then a dark KomKits record
+     wipes across to replace it. Scrubbed to scroll, not scheduled. Highlight boxes are
+     anchored to real DOM rects on each frame so they never drift off the handwriting. */
+  .pr{background:var(--white)}
+  .pr-track{height:260vh;position:relative}
+  .pr-sticky{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+  .pr-head{text-align:center;margin-bottom:44px;padding:0 20px}
+  .pr-stage{position:relative;width:min(560px,88vw);height:min(420px,64vh)}
+  .pr-paper{position:absolute;inset:0;background:var(--white);border:1px solid var(--grey-200);border-radius:6px;
+    box-shadow:var(--shadow-z1),0 24px 64px rgba(17,18,20,.10);padding:30px 36px;opacity:0;transform:translateY(40px) rotate(-1deg)}
+  .pr-paper-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+  .pr-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--ink-400);text-transform:uppercase}
+  .pr-hand{font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--ink-700)}
+  .pr-rule{height:1px;background:var(--grey-100);margin:10px 0}
+  .pr-lines .li{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:15px;line-height:1;color:var(--ink-700);display:flex;justify-content:space-between;padding:9px 0}
+  .pr-lines .li .dots{flex:1;border-bottom:1px dotted var(--ink-400);margin:0 8px;transform:translateY(-4px)}
+  .pr-total{font-family:Georgia,'Times New Roman',serif;font-style:italic;display:flex;justify-content:space-between;font-size:17px;padding-top:6px}
+  .pr-hl{position:absolute;border:1.5px solid var(--info);border-radius:4px;opacity:0;background:rgba(0,162,174,.06)}
+  .pr-hl .pr-tag{position:absolute;top:-11px;left:10px;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    background:var(--info);color:var(--white);border-radius:3px;padding:2px 7px;white-space:nowrap;font-style:normal}
+  .pr-panel{position:absolute;inset:0;background:var(--ink-900);border-radius:6px;color:var(--white);clip-path:inset(0 100% 0 0);
+    padding:30px 36px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(17,18,20,.28)}
+  .pr-panel-tag{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:14px}
+  .pr-rec-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+  .pr-rec-sub{font-size:12.5px;color:rgba(255,255,255,.55);margin-bottom:20px}
+  .pr-kv{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px;font-size:13px}
+  .pr-kv .k{color:rgba(255,255,255,.45);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:3px}
+  .pr-kv .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .pr-kv .v.ok{color:#31d07f}
+  .pr-foot{margin-top:auto;display:flex;gap:8px}
+  .pr-pill{font-size:10.5px;font-weight:600;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:2px 9px;color:rgba(255,255,255,.6)}
+  @media(max-width:700px){
+    .pr-track{height:210vh}
+    .pr-paper,.pr-panel{padding:20px}
+    .pr-lines .li,.pr-total{font-size:12.5px}
+    .pr-kv{gap:9px 14px;font-size:11.5px}
+    .pr-rec-title{font-size:16px}
+  }
+</style>
+
+<section class="pr" aria-labelledby="pr-title">
+  <div class="pr-track" id="pr-track">
+    <div class="pr-sticky">
+      <div class="pr-head">
+        <p class="eyebrow">From paper to platform</p>
+        <h2 id="pr-title">Less paperwork. More clarity.</h2>
+      </div>
+      <div class="pr-stage">
+        <div class="pr-paper" id="pr-paper">
+          <div class="pr-paper-head">
+            <div>
+              <div class="pr-lbl">Tax Invoice</div>
+              <div class="pr-hand" style="font-size:19px;margin-top:5px">Meera Traders</div>
+            </div>
+            <div class="pr-hand" style="text-align:right;font-size:13px">08 / 07 / 2026<br>No. 2041</div>
+          </div>
+          <div class="pr-rule"></div>
+          <div class="pr-lines">
+            <div class="li"><span>2 × Cotton Kurta (M)</span><span class="dots"></span><span>2,380</span></div>
+            <div class="li"><span>1 × Linen Shirt (L)</span><span class="dots"></span><span>1,890</span></div>
+            <div class="li"><span>3 × Silk Stole</span><span class="dots"></span><span>2,850</span></div>
+          </div>
+          <div class="pr-rule"></div>
+          <div class="pr-total"><span>Total incl. GST</span><b>₹ 7,974</b></div>
+          <div class="pr-hl" id="pr-hl1"><span class="pr-tag">Customer</span></div>
+          <div class="pr-hl" id="pr-hl2"><span class="pr-tag">Line items</span></div>
+          <div class="pr-hl" id="pr-hl3"><span class="pr-tag">Total + GST</span></div>
+        </div>
+        <div class="pr-panel" id="pr-panel">
+          <div class="pr-panel-tag">KomKits · structured record</div>
+          <div class="pr-rec-title">Invoice INV-2041</div>
+          <div class="pr-rec-sub">Meera Traders · Kochi · 8 Jul 2026</div>
+          <div class="pr-kv">
+            <div><div class="k">Subtotal</div><div class="v">₹7,120</div></div>
+            <div><div class="k">GST (12%)</div><div class="v">₹854</div></div>
+            <div><div class="k">Total</div><div class="v">₹7,974</div></div>
+            <div><div class="k">Status</div><div class="v ok">Paid · UPI</div></div>
+            <div><div class="k">Stock</div><div class="v">6 items deducted</div></div>
+            <div><div class="k">Reports</div><div class="v">Updated live</div></div>
+          </div>
+          <div class="pr-foot">
+            <span class="pr-pill">Searchable</span>
+            <span class="pr-pill">AI-readable</span>
+            <span class="pr-pill">Audit-ready</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* paper reveal — scroll-scrub (shares global reduceMotion from 00-head) */
+(function(){
+  const track=document.getElementById('pr-track');
+  const paper=document.getElementById('pr-paper');
+  const panel=document.getElementById('pr-panel');
+  const hls=[document.getElementById('pr-hl1'),document.getElementById('pr-hl2'),document.getElementById('pr-hl3')];
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const ramp=(p,a,b)=>clamp((p-a)/(b-a),0,1);
+
+  function place(){
+    const stage=paper.getBoundingClientRect();
+    const box=(hl,el,px,py)=>{
+      const r=el.getBoundingClientRect();
+      hl.style.left=(r.left-stage.left-px)+'px';
+      hl.style.top=(r.top-stage.top-py)+'px';
+      hl.style.width=(r.width+px*2)+'px';
+      hl.style.height=(r.height+py*2)+'px';
+    };
+    box(hls[0],paper.querySelector('.pr-hand'),8,6);
+    box(hls[1],paper.querySelector('.pr-lines'),6,4);
+    box(hls[2],paper.querySelector('.pr-total'),6,6);
+  }
+  function render(p){
+    const e=ramp(p,0,0.18);
+    paper.style.opacity=e;
+    paper.style.transform='translateY('+(40*(1-e))+'px) rotate('+(-1*(1-e))+'deg)';
+    if(e>=1) place();
+    hls.forEach((hl,i)=>hl.style.opacity=ramp(p,0.22+i*0.07,0.32+i*0.07));
+    const w=ramp(p,0.5,0.82), eased=1-Math.pow(1-w,3);
+    panel.style.clipPath='inset(0 '+((1-eased)*100)+'% 0 0)';
+    if(w>0) paper.style.transform='translateY(0) rotate(0) scale('+(1-w*0.03)+')';
+  }
+
+  if(reduceMotion){
+    paper.style.opacity=1; paper.style.transform='none';
+    place(); hls.forEach(h=>h.style.opacity=1);
+    panel.style.clipPath='inset(0 0 0 0)';
+    addEventListener('resize',place);
+    return;
+  }
+  let ticking=false, active=false;
+  const prog=()=>{ const r=track.getBoundingClientRect(); const t=r.height-innerHeight; return t<=0?1:clamp(-r.top/t,0,1); };
+  const upd=()=>{ ticking=false; if(active) render(prog()); };
+  const onScroll=()=>{ if(!ticking){ ticking=true; requestAnimationFrame(upd); } };
+  new IntersectionObserver(es=>es.forEach(x=>{
+    active=x.isIntersecting;
+    if(active){ addEventListener('scroll',onScroll,{passive:true}); upd(); }
+    else removeEventListener('scroll',onScroll);
+  })).observe(track);
+  addEventListener('resize',()=>{ place(); upd(); });
+  render(prog());
+})();
+</script>
