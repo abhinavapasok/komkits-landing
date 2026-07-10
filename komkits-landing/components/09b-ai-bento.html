@@ -4,6 +4,7 @@
   .b-cell{position:relative;background:var(--white);border:1px solid var(--grey-200);border-radius:8px;padding:24px;overflow:hidden}
   .b-cell.hero-cell{grid-column:span 2;grid-row:span 2}
   .b-cell.b-wide{grid-column:span 2}
+  .b-cell.b-full{grid-column:1 / -1}
   .b-cell h3{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
   .b-cell p{font-size:14px;color:var(--ink-500);max-width:40ch}
   .b-cell .chip{margin-bottom:14px}
@@ -20,58 +21,110 @@
   .rep-prompt svg{width:14px;height:14px;flex:none}
   .key-chip{display:inline-flex;align-items:center;gap:8px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:var(--radius);padding:8px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink-700)}
   .key-chip svg{width:14px;height:14px;stroke:var(--ink-500)}
-  .mcp-row{display:flex;gap:8px;flex-wrap:wrap}
-  .mcp-row .chip{margin:0}
-  .qa-list{display:flex;flex-direction:column;gap:8px}
-  .qa-list span{font-size:13px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:999px;padding:7px 14px;color:var(--ink-700);width:max-content;max-width:100%}
-  .ai-close{margin-top:36px;text-align:center;font-size:16px;font-style:italic;color:var(--ink-500)}
-  @media (max-width:860px){.bento{grid-template-columns:1fr 1fr}.b-cell.hero-cell{grid-column:span 2;grid-row:auto}}
-  @media (max-width:560px){.bento{grid-template-columns:1fr}.b-cell.hero-cell,.b-cell.b-wide{grid-column:span 1}}
+
+  /* --- BYOK: horizontal layout (breaks the vertical card-grid pattern) --- */
+  .b-cell.b-byok{display:flex;flex-direction:row;align-items:center;gap:28px}
+  .b-byok-copy{flex:1;min-width:0}
+  .b-byok-copy .chip{margin-bottom:10px}
+  .b-byok-copy h3{margin-bottom:6px}
+  .b-byok-art{flex:0 0 auto;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+  .b-byok-art .key-chip{white-space:nowrap}
+  .byok-note{font-size:11.5px;color:var(--ink-400);margin-top:2px;text-align:right}
+
+  /* --- Connect AI tools: compact icon-led row, spans right 2 cols --- */
+  .b-connect{display:flex;flex-direction:column;gap:14px;grid-column:span 2}
+  .b-connect h3{margin-bottom:0}
+  .conn-tools{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+  .conn-tool{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-700);background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:8px 14px}
+  .conn-tool svg{width:16px;height:16px;flex:none}
+
+  /* --- Plain language: conversational flow (not identical bubbles) --- */
+  .qa-flow{display:flex;flex-direction:column;gap:10px}
+  .qa-q{font-size:13px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:14px 14px 14px 4px;padding:9px 16px;color:var(--ink-700);width:max-content;max-width:90%}
+  .qa-a{font-size:13px;background:var(--ink-900);border-radius:14px 14px 4px 14px;padding:9px 16px;color:var(--white);width:max-content;max-width:90%;align-self:flex-end;opacity:.85}
+
+  /* --- Section CTA (replaces weak italic close) --- */
+  .ai-cta-row{display:flex;justify-content:center;gap:14px;margin-top:40px}
+
+  @media (max-width:860px){
+    .bento{grid-template-columns:1fr 1fr}
+    .b-cell.hero-cell{grid-column:span 2;grid-row:auto}
+    .b-cell.b-full{grid-column:span 2}
+    .b-cell.b-byok{flex-direction:column;align-items:flex-start}
+    .b-byok-art{align-items:flex-start}
+    .byok-note{text-align:left}
+  }
+  @media (max-width:560px){
+    .bento{grid-template-columns:1fr}
+    .b-cell.hero-cell,.b-cell.b-wide,.b-cell.b-full{grid-column:span 1}
+    .conn-tools{flex-direction:column}
+  }
 </style>
 
 <!-- ================= 6. AI bento + spotlight (lab §11) ================= -->
-<section id="ai">
+<section id="ai" aria-labelledby="ai-heading">
   <div class="wrap">
     <div class="center">
-      <p class="eyebrow">AI-native platform</p>
-      <h2>Your business data, speaking your language</h2>
-      <p class="lede">KomKits isn’t a business tool with AI bolted on. It’s built AI-first — so your data works for you, wherever you work.</p>
+      <h2 id="ai-heading">Your business data, answering back</h2>
+      <p class="lede">AI isn't bolted on — it's how KomKits works. Plug in your own key, ask in plain language, and connect the AI tools you already use.</p>
     </div>
-    <div class="bento" id="bento">
+    <div class="bento" id="bento" role="group" aria-label="AI capabilities">
+      <!-- Hero cell: AI reports — chart + prompt (unchanged, strongest element) -->
       <div class="b-cell hero-cell reveal">
         <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>AI-Powered Reports</h3>
-        <p>Skip the spreadsheet gymnastics. Describe the report you need, and KomKits builds it — sales trends, expense breakdowns, payment summaries, and more.</p>
+        <h3>Reports you describe, not build</h3>
+        <p>Skip the spreadsheet gymnastics. Describe what you need — KomKits queries your real data and builds the chart.</p>
         <div class="b-art">
           <div class="rep-bars" id="rep-bars" aria-hidden="true">
             <i style="height:34%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:84%"></i><i style="height:76%"></i><i style="height:95%"></i>
           </div>
-          <div class="rep-prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>“Sales by month, this year vs last”</div>
+          <div class="rep-prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>"Sales by month, this year vs last"</div>
         </div>
       </div>
-      <div class="b-cell reveal">
+
+      <!-- Connect AI tools: compact icon-led row — spans right 2 cols beside hero -->
+      <div class="b-cell b-connect reveal">
         <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>Bring Your Own Key</h3>
-        <p>Plug in your own AI key. No data lock-in, no per-seat AI pricing. Your key, your control.</p>
-        <div class="b-art"><span class="key-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L19 3.4M15 5l4 4"/></svg>sk-••••••••••••4F2A</span></div>
+        <h3>Works inside ChatGPT &amp; Claude</h3>
+        <p>A built-in server lets your favourite AI assistant read your live business data securely — no export, no copy-paste.</p>
+        <div class="conn-tools">
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>ChatGPT</span>
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Claude</span>
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Any AI app</span>
+        </div>
       </div>
-      <div class="b-cell reveal">
-        <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>MCP: connect your AI tools</h3>
-        <p>A built-in MCP server — ChatGPT, Claude, or any MCP assistant connects securely to your data.</p>
-        <div class="b-art mcp-row"><span class="chip">ChatGPT</span><span class="chip">Claude</span><span class="chip">Any MCP assistant</span></div>
-      </div>
+
+      <!-- Plain language: conversational Q&A flow — stacks beside hero, row 2 right -->
       <div class="b-cell reveal b-wide">
-        <h3>Ask in plain language</h3>
-        <p>Real questions, real answers — straight from your live business data.</p>
-        <div class="b-art qa-list">
-          <span>“What were my top-selling items last month?”</span>
-          <span>“Which suppliers am I overdue with?”</span>
-          <span>“Compare this Diwali season to last year”</span>
+        <h3>Ask like you'd ask a colleague</h3>
+        <p>Real questions, real answers — straight from your live numbers.</p>
+        <div class="b-art qa-flow">
+          <span class="qa-q">"What were my top-selling items last month?"</span>
+          <span class="qa-a">Here's your top 5 by revenue — Basmati Rice led at ₹1.4L</span>
+          <span class="qa-q">"Which suppliers am I overdue with?"</span>
+          <span class="qa-a">3 overdue: Mehta Traders (12 days), Sunrise Foods (8 days)…</span>
+        </div>
+      </div>
+
+      <!-- BYOK: horizontal full-width layout below the 2×2 block -->
+      <div class="b-cell b-byok b-full reveal">
+        <div class="b-byok-copy">
+          <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
+          <h3>Your key, your costs, your control</h3>
+          <p>Bring your own OpenAI or Anthropic key. No per-seat AI surcharge, no data lock-in — you pay your provider directly and can switch anytime.</p>
+        </div>
+        <div class="b-byok-art">
+          <span class="key-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L19 3.4M15 5l4 4"/></svg>sk-••••••••••••4F2A</span>
+          <span class="byok-note">paste your OpenAI / Anthropic key</span>
         </div>
       </div>
     </div>
-    <p class="ai-close">The first business platform designed to work with the AI tools you already use.</p>
+
+    <!-- Strong CTA replaces weak italic close -->
+    <div class="ai-cta-row">
+      <a href="#pricing" class="btn">Get Started Free</a>
+      <a href="#integrations" class="btn btn-s">See what's coming</a>
+    </div>
   </div>
 </section>
 

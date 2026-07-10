@@ -1704,6 +1704,7 @@ function makeHalftone(canvas, mount, host, opts){
   /* ================= modular board: all modules visible, connections traceable ================= */
   .mods{padding-top:40px}
   .board{
+    position:relative;
     display:grid;
     grid-template-columns:repeat(4,1fr);
     grid-template-rows:repeat(3,minmax(150px,auto));
@@ -1714,10 +1715,82 @@ function makeHalftone(canvas, mount, host, opts){
     gap:14px;
     margin-top:40px;
   }
+  .board-svg{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;z-index:3;overflow:visible;
+  }
+  .board-conn{
+    fill:none;stroke:var(--ink-900);stroke-width:1.75;stroke-linecap:round;
+    stroke-dasharray:6 5;opacity:0;
+  }
+  @keyframes conn-dash-flow{
+    to{stroke-dashoffset:-22}
+  }
+
+  /* SVG path draw-in: stroke draws from 0 to full length */
+  @keyframes conn-draw{
+    from{stroke-dashoffset:var(--path-len)}
+    to{stroke-dashoffset:0}
+  }
+  .board-conn.drawing{
+    opacity:.32;
+    stroke-dasharray:var(--path-len);
+    stroke-dashoffset:var(--path-len);
+    animation:conn-draw 420ms cubic-bezier(.22,1,.36,1) forwards;
+  }
+  .board-conn.drawn{
+    opacity:.32;
+    animation:conn-dash-flow 1.1s linear infinite;
+  }
+
+  /* progressive entrance choreography (§7.2 scrubbed/earned motion) */
+  @keyframes mod-reveal{
+    from{opacity:0;transform:translateY(14px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .board.is-revealed .mod{
+    animation:mod-reveal 580ms cubic-bezier(.22,1,.36,1) backwards;
+    animation-delay:calc(var(--i, 0) * 55ms);
+  }
+
+  /* data rows stagger in after their parent card */
+  @keyframes row-reveal{
+    from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .board.is-revealed .mrow,
+  .board.is-revealed .mod-line{
+    animation:row-reveal 400ms cubic-bezier(.22,1,.36,1) backwards;
+    animation-delay:calc((var(--i, 0) * 55ms) + 280ms + (var(--ri, 0) * 45ms));
+  }
+
+  /* sparkline bars: start collapsed, grow on entrance */
+  .spark i{height:10% !important}
+  .board.is-revealed .spark i{
+    transition:height 620ms cubic-bezier(.22,1,.36,1);
+    transition-delay:calc((var(--i, 0) * 55ms) + 350ms + (var(--si, 0) * 55ms));
+  }
+  .board.is-revealed.spark-go .spark i{
+    /* actual height set via inline style data-h; JS swaps it */
+  }
+
+  /* active icon attention pulse */
+  @keyframes icon-pop{
+    0%{transform:scale(1.08)}
+    50%{transform:scale(1.16)}
+    100%{transform:scale(1.08)}
+  }
+  .board.has-active .mod.active .mod-ic{
+    animation:icon-pop 280ms cubic-bezier(.22,1,.36,1);
+  }
+
   .mod{
     position:relative;background:var(--white);border:1px solid var(--grey-200);border-radius:12px;
-    padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden;
-    transition:opacity .3s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease),transform .25s var(--ease);
+    padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden;z-index:1;
+    transition:opacity 280ms cubic-bezier(.25,1,.5,1),
+               border-color 240ms cubic-bezier(.25,1,.5,1),
+               box-shadow 240ms cubic-bezier(.25,1,.5,1),
+               transform 240ms cubic-bezier(.25,1,.5,1);
   }
   .mod:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
   .mod.sales{grid-area:sales}
@@ -1729,16 +1802,28 @@ function makeHalftone(canvas, mount, host, opts){
   .mod.staff{grid-area:staff}
 
   /* connection-trace states (progressive enhancement; default = all visible & equal) */
-  .board.has-active .mod{opacity:.4}
-  .board.has-active .mod.linked{opacity:1;border-color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--ink-400)}
-  .board.has-active .mod.active{opacity:1;border-color:var(--ink-900);box-shadow:var(--shadow-z2);transform:translateY(-2px)}
+  .board.has-active .mod{opacity:.38}
+  .board.has-active .mod.linked{
+    opacity:1;border-color:var(--ink-400);
+    box-shadow:0 4px 14px rgba(17,18,20,.05),inset 0 0 0 1px var(--ink-400);
+    transform:translateY(-1.5px);
+  }
+  .board.has-active .mod.active{
+    opacity:1;border-color:var(--ink-900);
+    box-shadow:var(--shadow-z2),0 0 0 1px var(--ink-900);
+    transform:translateY(-4px);z-index:4;
+  }
 
   /* tile header */
   .mod-hd{display:flex;align-items:center;gap:10px}
   .mod-ic{width:32px;height:32px;border-radius:8px;background:var(--grey-100);border:1px solid var(--grey-200);
-    display:grid;place-items:center;flex:none;transition:background .25s var(--ease),border-color .25s var(--ease)}
+    display:grid;place-items:center;flex:none;
+    transition:background 240ms cubic-bezier(.25,1,.5,1),
+               border-color 240ms cubic-bezier(.25,1,.5,1),
+               transform 240ms cubic-bezier(.22,1,.36,1)}
   .mod-ic svg{width:17px;height:17px;stroke:var(--ink-900);fill:none;stroke-linecap:round;stroke-linejoin:round}
-  .board.has-active .mod.active .mod-ic{background:var(--ink-900);border-color:var(--ink-900)}
+  .mod:hover .mod-ic{transform:scale(1.05)}
+  .board.has-active .mod.active .mod-ic{background:var(--ink-900);border-color:var(--ink-900);transform:scale(1.08)}
   .board.has-active .mod.active .mod-ic svg{stroke:var(--white)}
   .mod-nm{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink-900)}
   .mod.big .mod-nm{font-size:18px}
@@ -1747,12 +1832,19 @@ function makeHalftone(canvas, mount, host, opts){
   /* "linked" flag */
   .mod-flag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     color:var(--ink-500);background:var(--grey-100);border:1px solid var(--grey-200);border-radius:999px;padding:2px 8px;
-    opacity:0;transform:translateY(-3px);transition:opacity .25s var(--ease),transform .25s var(--ease);pointer-events:none}
-  .board.has-active .mod.linked .mod-flag{opacity:1;transform:none}
+    opacity:0;transform:translateY(-4px) scale(.92);
+    transition:opacity 260ms cubic-bezier(.22,1,.36,1),transform 260ms cubic-bezier(.22,1,.36,1);
+    pointer-events:none}
+  .board.has-active .mod.linked .mod-flag{opacity:1;transform:none;
+    transition-delay:calc(var(--fi, 0) * 50ms + 180ms)}
 
   /* data rows (sales, items) */
   .mrow{display:flex;align-items:center;gap:10px;background:var(--grey-50);border:1px solid var(--grey-200);
-    border-radius:8px;padding:9px 11px;font-size:13px;min-width:0}
+    border-radius:8px;padding:9px 11px;font-size:13px;min-width:0;
+    transition:border-color 180ms cubic-bezier(.25,1,.5,1),
+               transform 180ms cubic-bezier(.25,1,.5,1),
+               background-color 180ms cubic-bezier(.25,1,.5,1)}
+  .mrow:hover{transform:translateX(3px);border-color:var(--ink-400);background:var(--white)}
   .mrow .ic{width:26px;height:26px;border-radius:6px;background:var(--white);border:1px solid var(--grey-200);
     display:grid;place-items:center;flex:none}
   .mrow .ic svg{width:14px;height:14px;stroke:var(--ink-700);fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -1761,22 +1853,40 @@ function makeHalftone(canvas, mount, host, opts){
     white-space:nowrap;font-variant-numeric:tabular-nums}
   .mrows{display:flex;flex-direction:column;gap:8px}
 
+  /* live status indicator pulse */
+  @keyframes dot-pulse{
+    0%,100%{transform:scale(1);opacity:1}
+    50%{transform:scale(1.45);opacity:.55}
+  }
+  .chip.live .d{
+    display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;
+    animation:dot-pulse 2.2s infinite ease-in-out;
+  }
+
   /* compact single-line modules (purchase, returns, payments, staff) */
   .mod-lines{display:flex;flex-direction:column;gap:9px;margin-top:2px}
-  .mod-line{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}
+  .mod-line{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0;
+    transition:transform 180ms cubic-bezier(.25,1,.5,1)}
+  .mod-line:hover{transform:translateX(2.5px)}
   .mod-line b{font-weight:600;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mod-line .m{color:var(--ink-500);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
 
   /* expense sparkline + net */
   .spark{display:flex;align-items:flex-end;gap:6px;height:54px;margin-top:2px}
-  .spark i{flex:1;background:var(--grey-200);border-radius:3px 3px 0 0;min-height:10%}
+  .spark i{flex:1;background:var(--grey-200);border-radius:3px 3px 0 0;min-height:10%;
+    transition:height 480ms cubic-bezier(.22,1,.36,1),background-color 220ms cubic-bezier(.25,1,.5,1)}
   .spark i.up{background:var(--ink-900)}
+  .mod.expense:hover .spark i.up{background:var(--ink-900)}
   .mod-stat{display:flex;align-items:baseline;gap:8px;margin-top:auto}
   .mod-stat b{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink-900)}
   .mod-stat span{font-size:12px;color:var(--ink-500)}
 
   .board-hint{margin-top:20px;font-size:13.5px;color:var(--ink-500);text-align:center;min-height:1.5em;
-    transition:color .2s var(--ease)}
+    transition:color 200ms cubic-bezier(.25,1,.5,1),
+               opacity 160ms cubic-bezier(.22,1,.36,1),
+               transform 160ms cubic-bezier(.22,1,.36,1),
+               filter 160ms cubic-bezier(.22,1,.36,1)}
+  .board-hint.changing{opacity:0;transform:translateY(4px);filter:blur(2px)}
   .board.has-active ~ .board-hint,.board-hint.lit{color:var(--ink-900)}
 
   @media (max-width:960px){
@@ -1799,21 +1909,23 @@ function makeHalftone(canvas, mount, host, opts){
     .mod-desc{display:none}
   }
   @media (prefers-reduced-motion:reduce){
-    .mod,.mod-ic,.mod-flag,.board-hint{transition:none}
-    .mod-flag{transform:none}
+    .mod,.mod-ic,.mod-flag,.board-hint,.mrow,.mod-line,.spark i,.board-conn{transition:none !important;animation:none !important}
+    .mod,.mrow,.mod-line,.mod-flag{transform:none !important}
+    .spark i{height:var(--h) !important}
   }
 </style>
 
 <!-- ================= 4. modular board: seven modules, one connected back office ================= -->
 <section id="modules" class="mods">
   <div class="wrap">
-    <h2>A complete back office, out of the box</h2>
-    <p class="lede">Seven independent modules covering the full loop from first sale to final settlement. Use only what you need — then trace how any one connects across the rest.</p>
+    <h2 class="reveal">A complete back office, out of the box</h2>
+    <p class="lede reveal" style="--i:1">Seven independent modules covering the full loop from first sale to final settlement. Use only what you need — then trace how any one connects across the rest.</p>
 
     <div class="board" id="board" aria-label="KomKits modules — hover or focus a module to trace its connections">
+      <svg class="board-svg" id="board-svg" aria-hidden="true"></svg>
 
       <!-- SALES (hero tile) -->
-      <article class="mod sales big" tabindex="0" role="group" data-mod="sales" data-links="payments returns items" aria-label="Sales Invoicing module">
+      <article class="mod sales big" style="--i:0" tabindex="0" role="group" data-mod="sales" data-links="payments returns items" aria-label="Sales Invoicing module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span>
@@ -1821,89 +1933,89 @@ function makeHalftone(canvas, mount, host, opts){
         </div>
         <p class="mod-desc">Create, send, and track sales invoices — taxes, discounts, and rounding handled correctly every time.</p>
         <div class="mrows">
-          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2041 · Sharma Kirana</b><span class="val">₹18,500 <span class="chip">Sent</span></span></div>
-          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2040 · Menon Traders</b><span class="val">₹6,320 <span class="chip live"><span class="d"></span>Paid</span></span></div>
-          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2039 · Fab Textiles</b><span class="val">₹13,000 <span class="chip">Overdue</span></span></div>
+          <div class="mrow" style="--ri:0"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2041 · Sharma Kirana</b><span class="val">₹18,500 <span class="chip">Sent</span></span></div>
+          <div class="mrow" style="--ri:1"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2040 · Menon Traders</b><span class="val">₹6,320 <span class="chip live"><span class="d"></span>Paid</span></span></div>
+          <div class="mrow" style="--ri:2"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2039 · Fab Textiles</b><span class="val">₹13,000 <span class="chip">Overdue</span></span></div>
         </div>
       </article>
 
       <!-- PURCHASE -->
-      <article class="mod purchase" tabindex="0" role="group" data-mod="purchase" data-links="items payments" aria-label="Purchase Invoicing module">
+      <article class="mod purchase" style="--i:1" tabindex="0" role="group" data-mod="purchase" data-links="items payments" aria-label="Purchase Invoicing module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span>
           <span class="mod-nm">Purchase Invoicing</span>
         </div>
         <div class="mod-lines">
-          <div class="mod-line"><b>Gupta Wholesale</b><span class="m">₹42,100 · Due</span></div>
-          <div class="mod-line"><b>Kochi Distributors</b><span class="m">₹9,850 · Paid</span></div>
+          <div class="mod-line" style="--ri:0"><b>Gupta Wholesale</b><span class="m">₹42,100 · Due</span></div>
+          <div class="mod-line" style="--ri:1"><b>Kochi Distributors</b><span class="m">₹9,850 · Paid</span></div>
         </div>
       </article>
 
       <!-- ITEMS (tall tile) -->
-      <article class="mod items" tabindex="0" role="group" data-mod="items" data-links="sales purchase returns" aria-label="Item Management module">
+      <article class="mod items" style="--i:2" tabindex="0" role="group" data-mod="items" data-links="sales purchase returns" aria-label="Item Management module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.3 12 12l8.7-4.7M12 22V12"/></svg></span>
           <span class="mod-nm">Items</span>
         </div>
         <div class="mrows">
-          <div class="mrow"><b>Cotton Saree · SR-104</b><span class="val">38 in stock</span></div>
-          <div class="mrow"><b>Silk Dupatta · DP-221</b><span class="val">12 in stock</span></div>
-          <div class="mrow"><b>Kurta Set · KS-310</b><span class="val">3 left</span></div>
-          <div class="mrow"><b>Linen Shirt · LS-088</b><span class="val">54 in stock</span></div>
+          <div class="mrow" style="--ri:0"><b>Cotton Saree · SR-104</b><span class="val">38 in stock</span></div>
+          <div class="mrow" style="--ri:1"><b>Silk Dupatta · DP-221</b><span class="val">12 in stock</span></div>
+          <div class="mrow" style="--ri:2"><b>Kurta Set · KS-310</b><span class="val">3 left</span></div>
+          <div class="mrow" style="--ri:3"><b>Linen Shirt · LS-088</b><span class="val">54 in stock</span></div>
         </div>
       </article>
 
       <!-- PAYMENTS -->
-      <article class="mod payments" tabindex="0" role="group" data-mod="payments" data-links="sales purchase expense staff" aria-label="Payment Accounts module">
+      <article class="mod payments" style="--i:3" tabindex="0" role="group" data-mod="payments" data-links="sales purchase expense staff" aria-label="Payment Accounts module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
           <span class="mod-nm">Payments</span>
         </div>
         <div class="mod-lines">
-          <div class="mod-line"><b>HDFC Current</b><span class="m">₹3.4L</span></div>
-          <div class="mod-line"><b>Cash drawer</b><span class="m">₹18,240</span></div>
+          <div class="mod-line" style="--ri:0"><b>HDFC Current</b><span class="m">₹3.4L</span></div>
+          <div class="mod-line" style="--ri:1"><b>Cash drawer</b><span class="m">₹18,240</span></div>
         </div>
       </article>
 
       <!-- RETURNS -->
-      <article class="mod returns" tabindex="0" role="group" data-mod="returns" data-links="sales items" aria-label="Returns Management module">
+      <article class="mod returns" style="--i:4" tabindex="0" role="group" data-mod="returns" data-links="sales items" aria-label="Returns Management module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span>
           <span class="mod-nm">Returns</span>
         </div>
         <div class="mod-lines">
-          <div class="mod-line"><b>INV-2031</b><span class="m">₹2,150 back</span></div>
-          <div class="mod-line"><b>Ledger &amp; stock</b><span class="m">rebalanced</span></div>
+          <div class="mod-line" style="--ri:0"><b>INV-2031</b><span class="m">₹2,150 back</span></div>
+          <div class="mod-line" style="--ri:1"><b>Ledger &amp; stock</b><span class="m">rebalanced</span></div>
         </div>
       </article>
 
       <!-- EXPENSE & INCOME (wide tile) -->
-      <article class="mod expense" tabindex="0" role="group" data-mod="expense" data-links="payments" aria-label="Expense and Income Tracking module">
+      <article class="mod expense" style="--i:5" tabindex="0" role="group" data-mod="expense" data-links="payments" aria-label="Expense and Income Tracking module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></span>
           <span class="mod-nm">Expense &amp; Income</span>
         </div>
         <div class="spark" aria-hidden="true">
-          <i style="height:42%"></i><i style="height:60%"></i><i style="height:38%"></i><i class="up" style="height:78%"></i><i style="height:52%"></i><i style="height:66%"></i><i class="up" style="height:90%"></i><i style="height:48%"></i>
+          <i style="--h:42%" data-h="42%" data-si="0"></i><i style="--h:60%" data-h="60%" data-si="1"></i><i style="--h:38%" data-h="38%" data-si="2"></i><i class="up" style="--h:78%" data-h="78%" data-si="3"></i><i style="--h:52%" data-h="52%" data-si="4"></i><i style="--h:66%" data-h="66%" data-si="5"></i><i class="up" style="--h:90%" data-h="90%" data-si="6"></i><i style="--h:48%" data-h="48%" data-si="7"></i>
         </div>
         <div class="mod-stat"><b>₹1.18L</b><span>net this month · income minus expenses</span></div>
       </article>
 
       <!-- STAFF & SALARY -->
-      <article class="mod staff" tabindex="0" role="group" data-mod="staff" data-links="payments expense" aria-label="Staff and Salary module">
+      <article class="mod staff" style="--i:6" tabindex="0" role="group" data-mod="staff" data-links="payments expense" aria-label="Staff and Salary module">
         <span class="mod-flag">Linked</span>
         <div class="mod-hd">
           <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
           <span class="mod-nm">Staff &amp; Salary</span>
         </div>
         <div class="mod-lines">
-          <div class="mod-line"><b>July payroll</b><span class="m">6 staff</span></div>
-          <div class="mod-line"><b>Paid out</b><span class="m">₹94,000</span></div>
+          <div class="mod-line" style="--ri:0"><b>July payroll</b><span class="m">6 staff</span></div>
+          <div class="mod-line" style="--ri:1"><b>Paid out</b><span class="m">₹94,000</span></div>
         </div>
       </article>
 
@@ -1915,35 +2027,160 @@ function makeHalftone(canvas, mount, host, opts){
 
 <script>
 /* ===== modular board: trace a module's workflow connections on hover/focus =====
-   Progressive enhancement — every tile is fully visible without JS; this only adds
-   the dim/highlight trace and the live caption. Reduced-motion keeps state changes instant. */
+   Progressive enhancement — every tile is fully visible without JS; this adds
+   staggered entrance on view, SVG Bézier connection traces with draw-in animation,
+   sparkline bar growth, cascading data rows, and live caption crossfade.
+   Reduced-motion keeps state changes instant. */
 (function(){
   const board=document.getElementById('board');
   const hint=document.getElementById('board-hint');
+  const svg=document.getElementById('board-svg');
   if(!board||!hint) return;
   const tiles=[...board.querySelectorAll('.mod')];
   const NAMES={sales:'Sales Invoicing',purchase:'Purchase Invoicing',items:'Items',
     returns:'Returns',expense:'Expense & Income',payments:'Payments',staff:'Staff & Salary'};
   const DEFAULT=hint.textContent;
+  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const listFmt = (typeof Intl!=='undefined' && Intl.ListFormat)
     ? new Intl.ListFormat('en',{style:'long',type:'conjunction'})
     : {format:a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]};
+
+  /* Sparkline bar growth: set actual heights after board entrance */
+  function growSparkBars(){
+    const bars = board.querySelectorAll('.spark i[data-h]');
+    bars.forEach((bar,i)=>{
+      bar.style.setProperty('--si', i);
+      // rAF so the transition picks up the change
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          bar.style.height = bar.dataset.h;
+        });
+      });
+    });
+    board.classList.add('spark-go');
+  }
+
+  /* Progressive entrance observer */
+  if('IntersectionObserver' in window && !isReduced){
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          board.classList.add('is-revealed');
+          // Sparkline bars grow after cards have mostly entered (~600ms)
+          setTimeout(growSparkBars, 100);
+          obs.disconnect();
+        }
+      });
+    },{threshold:0.18});
+    obs.observe(board);
+  } else {
+    // Reduced motion or no IO: show bars at full height immediately
+    board.querySelectorAll('.spark i[data-h]').forEach(bar=>{
+      bar.style.height = bar.dataset.h;
+    });
+  }
+
+  function setHint(text, lit){
+    if(hint.textContent === text) return;
+    hint.classList.add('changing');
+    setTimeout(()=>{
+      hint.textContent = text;
+      hint.classList.toggle('lit', lit);
+      hint.classList.remove('changing');
+    }, 80);
+  }
+
+  /* Connection draw-in timers (for cleanup) */
+  let drawTimers = [];
+
+  function drawConnections(activeEl, linkKeys){
+    if(!svg) return;
+    svg.innerHTML = '';
+    drawTimers.forEach(clearTimeout);
+    drawTimers = [];
+    const bRect = board.getBoundingClientRect();
+    const aRect = activeEl.getBoundingClientRect();
+    const aCenter = { x: aRect.left + aRect.width/2 - bRect.left, y: aRect.top + aRect.height/2 - bRect.top };
+
+    linkKeys.forEach((key, idx)=>{
+      const targetEl = board.querySelector('[data-mod="'+key+'"]');
+      if(!targetEl) return;
+      const tRect = targetEl.getBoundingClientRect();
+      const tCenter = { x: tRect.left + tRect.width/2 - bRect.left, y: tRect.top + tRect.height/2 - bRect.top };
+
+      const dx = Math.abs(tCenter.x - aCenter.x);
+      const curveX = dx > 40 ? dx * 0.45 : 0;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const d = `M ${aCenter.x} ${aCenter.y} C ${aCenter.x + curveX} ${aCenter.y}, ${tCenter.x - curveX} ${tCenter.y}, ${tCenter.x} ${tCenter.y}`;
+      path.setAttribute('d', d);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', 'var(--ink-900)');
+      path.setAttribute('stroke-width', '1.75');
+      path.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(path);
+
+      if(isReduced){
+        // Instant appearance for reduced motion
+        path.setAttribute('class', 'board-conn drawn');
+      } else {
+        // Draw-in animation: measure path length, set CSS custom prop, animate
+        const len = path.getTotalLength();
+        path.style.setProperty('--path-len', len);
+        path.setAttribute('class', 'board-conn drawing');
+        path.style.animationDelay = (idx * 60) + 'ms';
+
+        // After draw-in completes, switch to flowing dash
+        const tid = setTimeout(()=>{
+          path.setAttribute('class', 'board-conn drawn');
+          path.style.removeProperty('--path-len');
+          path.removeAttribute('style');
+        }, 420 + (idx * 60) + 40);
+        drawTimers.push(tid);
+      }
+
+      // Set stagger index on corresponding linked flag
+      const linkedEl = board.querySelector('[data-mod="'+key+'"]');
+      if(linkedEl){
+        const flag = linkedEl.querySelector('.mod-flag');
+        if(flag) flag.style.setProperty('--fi', idx);
+      }
+    });
+  }
+
+  function clearConnections(){
+    if(svg) svg.innerHTML = '';
+    drawTimers.forEach(clearTimeout);
+    drawTimers = [];
+  }
 
   function activate(el){
     const links=(el.dataset.links||'').split(' ').filter(Boolean);
     board.classList.add('has-active');
     tiles.forEach(t=>t.classList.remove('active','linked'));
     el.classList.add('active');
-    links.forEach(m=>{const t=board.querySelector('[data-mod="'+m+'"]');if(t)t.classList.add('linked');});
-    hint.textContent = NAMES[el.dataset.mod]+' connects to '+listFmt.format(links.map(m=>NAMES[m]))+'.';
-    hint.classList.add('lit');
+    links.forEach((m,i)=>{
+      const t=board.querySelector('[data-mod="'+m+'"]');
+      if(t){
+        t.classList.add('linked');
+        const flag = t.querySelector('.mod-flag');
+        if(flag) flag.style.setProperty('--fi', i);
+      }
+    });
+    drawConnections(el, links);
+    setHint(NAMES[el.dataset.mod]+' connects to '+listFmt.format(links.map(m=>NAMES[m]))+'.', true);
   }
+
   function clearAll(){
     board.classList.remove('has-active');
-    tiles.forEach(t=>t.classList.remove('active','linked'));
-    hint.textContent=DEFAULT;
-    hint.classList.remove('lit');
+    tiles.forEach(t=>{
+      t.classList.remove('active','linked');
+      const flag = t.querySelector('.mod-flag');
+      if(flag) flag.style.removeProperty('--fi');
+    });
+    clearConnections();
+    setHint(DEFAULT, false);
   }
 
   tiles.forEach(t=>{
@@ -1952,6 +2189,7 @@ function makeHalftone(canvas, mount, host, opts){
   });
   board.addEventListener('pointerleave',clearAll);
   board.addEventListener('focusout',e=>{ if(!board.contains(e.relatedTarget)) clearAll(); });
+  window.addEventListener('resize', clearConnections, {passive:true});
 })();
 </script>
 
@@ -3570,6 +3808,7 @@ function makeHalftone(canvas, mount, host, opts){
   .b-cell{position:relative;background:var(--white);border:1px solid var(--grey-200);border-radius:8px;padding:24px;overflow:hidden}
   .b-cell.hero-cell{grid-column:span 2;grid-row:span 2}
   .b-cell.b-wide{grid-column:span 2}
+  .b-cell.b-full{grid-column:1 / -1}
   .b-cell h3{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
   .b-cell p{font-size:14px;color:var(--ink-500);max-width:40ch}
   .b-cell .chip{margin-bottom:14px}
@@ -3586,58 +3825,110 @@ function makeHalftone(canvas, mount, host, opts){
   .rep-prompt svg{width:14px;height:14px;flex:none}
   .key-chip{display:inline-flex;align-items:center;gap:8px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:var(--radius);padding:8px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink-700)}
   .key-chip svg{width:14px;height:14px;stroke:var(--ink-500)}
-  .mcp-row{display:flex;gap:8px;flex-wrap:wrap}
-  .mcp-row .chip{margin:0}
-  .qa-list{display:flex;flex-direction:column;gap:8px}
-  .qa-list span{font-size:13px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:999px;padding:7px 14px;color:var(--ink-700);width:max-content;max-width:100%}
-  .ai-close{margin-top:36px;text-align:center;font-size:16px;font-style:italic;color:var(--ink-500)}
-  @media (max-width:860px){.bento{grid-template-columns:1fr 1fr}.b-cell.hero-cell{grid-column:span 2;grid-row:auto}}
-  @media (max-width:560px){.bento{grid-template-columns:1fr}.b-cell.hero-cell,.b-cell.b-wide{grid-column:span 1}}
+
+  /* --- BYOK: horizontal layout (breaks the vertical card-grid pattern) --- */
+  .b-cell.b-byok{display:flex;flex-direction:row;align-items:center;gap:28px}
+  .b-byok-copy{flex:1;min-width:0}
+  .b-byok-copy .chip{margin-bottom:10px}
+  .b-byok-copy h3{margin-bottom:6px}
+  .b-byok-art{flex:0 0 auto;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+  .b-byok-art .key-chip{white-space:nowrap}
+  .byok-note{font-size:11.5px;color:var(--ink-400);margin-top:2px;text-align:right}
+
+  /* --- Connect AI tools: compact icon-led row, spans right 2 cols --- */
+  .b-connect{display:flex;flex-direction:column;gap:14px;grid-column:span 2}
+  .b-connect h3{margin-bottom:0}
+  .conn-tools{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+  .conn-tool{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-700);background:var(--grey-50);border:1px solid var(--grey-200);border-radius:var(--radius);padding:8px 14px}
+  .conn-tool svg{width:16px;height:16px;flex:none}
+
+  /* --- Plain language: conversational flow (not identical bubbles) --- */
+  .qa-flow{display:flex;flex-direction:column;gap:10px}
+  .qa-q{font-size:13px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:14px 14px 14px 4px;padding:9px 16px;color:var(--ink-700);width:max-content;max-width:90%}
+  .qa-a{font-size:13px;background:var(--ink-900);border-radius:14px 14px 4px 14px;padding:9px 16px;color:var(--white);width:max-content;max-width:90%;align-self:flex-end;opacity:.85}
+
+  /* --- Section CTA (replaces weak italic close) --- */
+  .ai-cta-row{display:flex;justify-content:center;gap:14px;margin-top:40px}
+
+  @media (max-width:860px){
+    .bento{grid-template-columns:1fr 1fr}
+    .b-cell.hero-cell{grid-column:span 2;grid-row:auto}
+    .b-cell.b-full{grid-column:span 2}
+    .b-cell.b-byok{flex-direction:column;align-items:flex-start}
+    .b-byok-art{align-items:flex-start}
+    .byok-note{text-align:left}
+  }
+  @media (max-width:560px){
+    .bento{grid-template-columns:1fr}
+    .b-cell.hero-cell,.b-cell.b-wide,.b-cell.b-full{grid-column:span 1}
+    .conn-tools{flex-direction:column}
+  }
 </style>
 
 <!-- ================= 6. AI bento + spotlight (lab §11) ================= -->
-<section id="ai">
+<section id="ai" aria-labelledby="ai-heading">
   <div class="wrap">
     <div class="center">
-      <p class="eyebrow">AI-native platform</p>
-      <h2>Your business data, speaking your language</h2>
-      <p class="lede">KomKits isn’t a business tool with AI bolted on. It’s built AI-first — so your data works for you, wherever you work.</p>
+      <h2 id="ai-heading">Your business data, answering back</h2>
+      <p class="lede">AI isn't bolted on — it's how KomKits works. Plug in your own key, ask in plain language, and connect the AI tools you already use.</p>
     </div>
-    <div class="bento" id="bento">
+    <div class="bento" id="bento" role="group" aria-label="AI capabilities">
+      <!-- Hero cell: AI reports — chart + prompt (unchanged, strongest element) -->
       <div class="b-cell hero-cell reveal">
         <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>AI-Powered Reports</h3>
-        <p>Skip the spreadsheet gymnastics. Describe the report you need, and KomKits builds it — sales trends, expense breakdowns, payment summaries, and more.</p>
+        <h3>Reports you describe, not build</h3>
+        <p>Skip the spreadsheet gymnastics. Describe what you need — KomKits queries your real data and builds the chart.</p>
         <div class="b-art">
           <div class="rep-bars" id="rep-bars" aria-hidden="true">
             <i style="height:34%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:84%"></i><i style="height:76%"></i><i style="height:95%"></i>
           </div>
-          <div class="rep-prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>“Sales by month, this year vs last”</div>
+          <div class="rep-prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>"Sales by month, this year vs last"</div>
         </div>
       </div>
-      <div class="b-cell reveal">
+
+      <!-- Connect AI tools: compact icon-led row — spans right 2 cols beside hero -->
+      <div class="b-cell b-connect reveal">
         <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>Bring Your Own Key</h3>
-        <p>Plug in your own AI key. No data lock-in, no per-seat AI pricing. Your key, your control.</p>
-        <div class="b-art"><span class="key-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L19 3.4M15 5l4 4"/></svg>sk-••••••••••••4F2A</span></div>
+        <h3>Works inside ChatGPT &amp; Claude</h3>
+        <p>A built-in server lets your favourite AI assistant read your live business data securely — no export, no copy-paste.</p>
+        <div class="conn-tools">
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>ChatGPT</span>
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Claude</span>
+          <span class="conn-tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Any AI app</span>
+        </div>
       </div>
-      <div class="b-cell reveal">
-        <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
-        <h3>MCP: connect your AI tools</h3>
-        <p>A built-in MCP server — ChatGPT, Claude, or any MCP assistant connects securely to your data.</p>
-        <div class="b-art mcp-row"><span class="chip">ChatGPT</span><span class="chip">Claude</span><span class="chip">Any MCP assistant</span></div>
-      </div>
+
+      <!-- Plain language: conversational Q&A flow — stacks beside hero, row 2 right -->
       <div class="b-cell reveal b-wide">
-        <h3>Ask in plain language</h3>
-        <p>Real questions, real answers — straight from your live business data.</p>
-        <div class="b-art qa-list">
-          <span>“What were my top-selling items last month?”</span>
-          <span>“Which suppliers am I overdue with?”</span>
-          <span>“Compare this Diwali season to last year”</span>
+        <h3>Ask like you'd ask a colleague</h3>
+        <p>Real questions, real answers — straight from your live numbers.</p>
+        <div class="b-art qa-flow">
+          <span class="qa-q">"What were my top-selling items last month?"</span>
+          <span class="qa-a">Here's your top 5 by revenue — Basmati Rice led at ₹1.4L</span>
+          <span class="qa-q">"Which suppliers am I overdue with?"</span>
+          <span class="qa-a">3 overdue: Mehta Traders (12 days), Sunrise Foods (8 days)…</span>
+        </div>
+      </div>
+
+      <!-- BYOK: horizontal full-width layout below the 2×2 block -->
+      <div class="b-cell b-byok b-full reveal">
+        <div class="b-byok-copy">
+          <span class="chip live"><span class="d" aria-hidden="true"></span>Live today</span>
+          <h3>Your key, your costs, your control</h3>
+          <p>Bring your own OpenAI or Anthropic key. No per-seat AI surcharge, no data lock-in — you pay your provider directly and can switch anytime.</p>
+        </div>
+        <div class="b-byok-art">
+          <span class="key-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L19 3.4M15 5l4 4"/></svg>sk-••••••••••••4F2A</span>
+          <span class="byok-note">paste your OpenAI / Anthropic key</span>
         </div>
       </div>
     </div>
-    <p class="ai-close">The first business platform designed to work with the AI tools you already use.</p>
+
+    <!-- Strong CTA replaces weak italic close -->
+    <div class="ai-cta-row">
+      <a href="#pricing" class="btn">Get Started Free</a>
+      <a href="#integrations" class="btn btn-s">See what's coming</a>
+    </div>
   </div>
 </section>
 
