@@ -1,157 +1,254 @@
 <style>
-  /* ================= modules tabs walkthrough (komkits-tabs-sample) ================= */
-  .tabs-rail{display:flex;gap:4px;border-bottom:1px solid var(--grey-200);margin:40px 0 36px;overflow-x:auto;scrollbar-width:none}
-  .tabs-rail::-webkit-scrollbar{display:none}
-  .tab-btn{position:relative;background:none;border:0;cursor:pointer;font:inherit;font-size:14px;font-weight:600;
-    color:var(--ink-400);padding:12px 14px 14px;white-space:nowrap;display:flex;align-items:center;gap:8px;transition:color var(--dur) var(--ease)}
-  .tab-btn .num{width:20px;height:20px;border-radius:50%;border:1px solid var(--grey-200);font-size:11px;font-weight:700;display:grid;place-items:center;transition:all var(--dur) var(--ease)}
-  .tab-btn:hover,.tab-btn.active{color:var(--ink-900)}
-  .tab-btn.active .num{background:var(--ink-900);border-color:var(--ink-900);color:var(--white)}
-  .tab-btn::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink-900);transform:scaleX(0);transform-origin:left;transition:transform var(--dur) var(--ease)}
-  .tab-btn.active::after{transform:scaleX(1)}
-  /* auto-advance progress on the active tab */
-  .tab-btn.active .prog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--grey-200);z-index:-1}
-  .tab-panel{display:none;grid-template-columns:1fr 1fr;gap:48px;align-items:center;min-height:300px}
-  .tab-panel.active{display:grid;animation:fadeUp .3s var(--ease)}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  .tab-panel h3{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-bottom:12px}
-  .tab-panel p{color:var(--ink-500);font-size:15.5px;max-width:46ch}
-  .tab-art{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:8px;padding:22px;min-height:240px;display:flex;flex-direction:column;gap:10px;justify-content:center}
-  .art-row{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--grey-200);border-radius:var(--radius);padding:12px 14px;font-size:13px}
-  .art-row .ic{width:30px;height:30px;border-radius:var(--radius);background:var(--grey-100);border:1px solid var(--grey-200);display:grid;place-items:center;flex:none}
-  .art-row .ic svg{width:15px;height:15px;stroke:var(--ink-700)}
-  .art-row b{font-weight:600}
-  .tabs-rail-wrap{position:relative}
-  .tabs-rail-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:48px;
-    background:linear-gradient(to right,rgba(255,255,255,0),var(--white));pointer-events:none;
-    opacity:1;transition:opacity .3s var(--ease)}
-  .tabs-rail-wrap.scrolled-end::after{opacity:0}
-  @media (max-width:860px){.tab-panel{grid-template-columns:1fr;gap:28px}}
+  /* ================= modular board: all modules visible, connections traceable ================= */
+  .mods{padding-top:40px}
+  .board{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    grid-template-rows:repeat(3,minmax(150px,auto));
+    grid-template-areas:
+      "sales sales purchase items"
+      "sales sales payments items"
+      "returns expense expense staff";
+    gap:14px;
+    margin-top:40px;
+  }
+  .mod{
+    position:relative;background:var(--white);border:1px solid var(--grey-200);border-radius:12px;
+    padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden;
+    transition:opacity .3s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease),transform .25s var(--ease);
+  }
+  .mod:focus-visible{outline:2px solid var(--ink-900);outline-offset:2px}
+  .mod.sales{grid-area:sales}
+  .mod.purchase{grid-area:purchase}
+  .mod.items{grid-area:items}
+  .mod.returns{grid-area:returns}
+  .mod.expense{grid-area:expense}
+  .mod.payments{grid-area:payments}
+  .mod.staff{grid-area:staff}
+
+  /* connection-trace states (progressive enhancement; default = all visible & equal) */
+  .board.has-active .mod{opacity:.4}
+  .board.has-active .mod.linked{opacity:1;border-color:var(--ink-400);box-shadow:inset 0 0 0 1px var(--ink-400)}
+  .board.has-active .mod.active{opacity:1;border-color:var(--ink-900);box-shadow:var(--shadow-z2);transform:translateY(-2px)}
+
+  /* tile header */
+  .mod-hd{display:flex;align-items:center;gap:10px}
+  .mod-ic{width:32px;height:32px;border-radius:8px;background:var(--grey-100);border:1px solid var(--grey-200);
+    display:grid;place-items:center;flex:none;transition:background .25s var(--ease),border-color .25s var(--ease)}
+  .mod-ic svg{width:17px;height:17px;stroke:var(--ink-900);fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .board.has-active .mod.active .mod-ic{background:var(--ink-900);border-color:var(--ink-900)}
+  .board.has-active .mod.active .mod-ic svg{stroke:var(--white)}
+  .mod-nm{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink-900)}
+  .mod.big .mod-nm{font-size:18px}
+  .mod-desc{font-size:13.5px;color:var(--ink-500);line-height:1.5;max-width:46ch;margin-top:-2px}
+
+  /* "linked" flag */
+  .mod-flag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-500);background:var(--grey-100);border:1px solid var(--grey-200);border-radius:999px;padding:2px 8px;
+    opacity:0;transform:translateY(-3px);transition:opacity .25s var(--ease),transform .25s var(--ease);pointer-events:none}
+  .board.has-active .mod.linked .mod-flag{opacity:1;transform:none}
+
+  /* data rows (sales, items) */
+  .mrow{display:flex;align-items:center;gap:10px;background:var(--grey-50);border:1px solid var(--grey-200);
+    border-radius:8px;padding:9px 11px;font-size:13px;min-width:0}
+  .mrow .ic{width:26px;height:26px;border-radius:6px;background:var(--white);border:1px solid var(--grey-200);
+    display:grid;place-items:center;flex:none}
+  .mrow .ic svg{width:14px;height:14px;stroke:var(--ink-700);fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .mrow b{font-weight:600;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrow .val{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--ink-500);
+    white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mrows{display:flex;flex-direction:column;gap:8px}
+
+  /* compact single-line modules (purchase, returns, payments, staff) */
+  .mod-lines{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+  .mod-line{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}
+  .mod-line b{font-weight:600;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mod-line .m{color:var(--ink-500);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* expense sparkline + net */
+  .spark{display:flex;align-items:flex-end;gap:6px;height:54px;margin-top:2px}
+  .spark i{flex:1;background:var(--grey-200);border-radius:3px 3px 0 0;min-height:10%}
+  .spark i.up{background:var(--ink-900)}
+  .mod-stat{display:flex;align-items:baseline;gap:8px;margin-top:auto}
+  .mod-stat b{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink-900)}
+  .mod-stat span{font-size:12px;color:var(--ink-500)}
+
+  .board-hint{margin-top:20px;font-size:13.5px;color:var(--ink-500);text-align:center;min-height:1.5em;
+    transition:color .2s var(--ease)}
+  .board.has-active ~ .board-hint,.board-hint.lit{color:var(--ink-900)}
+
+  @media (max-width:960px){
+    .board{
+      grid-template-columns:repeat(2,1fr);
+      grid-template-rows:none;grid-auto-rows:minmax(140px,auto);
+      grid-template-areas:
+        "sales sales"
+        "items items"
+        "purchase payments"
+        "expense expense"
+        "returns staff";
+    }
+  }
+  @media (max-width:560px){
+    .board{
+      grid-template-columns:1fr;
+      grid-template-areas:"sales" "items" "purchase" "payments" "expense" "returns" "staff";
+    }
+    .mod-desc{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .mod,.mod-ic,.mod-flag,.board-hint{transition:none}
+    .mod-flag{transform:none}
+  }
 </style>
 
-<!-- ================= 4. modules tabs walkthrough (komkits-tabs-sample pattern) ================= -->
-<section id="modules" style="padding-top:40px">
+<!-- ================= 4. modular board: seven modules, one connected back office ================= -->
+<section id="modules" class="mods">
   <div class="wrap">
-    <p class="eyebrow">Everything you need, today</p>
     <h2>A complete back office, out of the box</h2>
-    <p class="lede">From the first sale to the final settlement — KomKits covers the full financial and operational loop of your business. Every feature is an independent module: use what you need, add more as you grow.</p>
+    <p class="lede">Seven independent modules covering the full loop from first sale to final settlement. Use only what you need — then trace how any one connects across the rest.</p>
 
-    <div class="tabs-rail-wrap" id="mod-rail-wrap">
-      <div class="tabs-rail" role="tablist" aria-label="Core modules" id="mod-rail">
-      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="t1"><span class="num">1</span>Sales Invoicing</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t2"><span class="num">2</span>Purchase Invoicing</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t3"><span class="num">3</span>Items</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t4"><span class="num">4</span>Returns</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t5"><span class="num">5</span>Expense &amp; Income</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t6"><span class="num">6</span>Payments</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="t7"><span class="num">7</span>Staff &amp; Salary</button>
-      </div>
+    <div class="board" id="board" aria-label="KomKits modules — hover or focus a module to trace its connections">
+
+      <!-- SALES (hero tile) -->
+      <article class="mod sales big" tabindex="0" role="group" data-mod="sales" data-links="payments returns items" aria-label="Sales Invoicing module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span>
+          <span class="mod-nm">Sales Invoicing</span>
+        </div>
+        <p class="mod-desc">Create, send, and track sales invoices — taxes, discounts, and rounding handled correctly every time.</p>
+        <div class="mrows">
+          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2041 · Sharma Kirana</b><span class="val">₹18,500 <span class="chip">Sent</span></span></div>
+          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2040 · Menon Traders</b><span class="val">₹6,320 <span class="chip live"><span class="d"></span>Paid</span></span></div>
+          <div class="mrow"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2039 · Fab Textiles</b><span class="val">₹13,000 <span class="chip">Overdue</span></span></div>
+        </div>
+      </article>
+
+      <!-- PURCHASE -->
+      <article class="mod purchase" tabindex="0" role="group" data-mod="purchase" data-links="items payments" aria-label="Purchase Invoicing module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span>
+          <span class="mod-nm">Purchase Invoicing</span>
+        </div>
+        <div class="mod-lines">
+          <div class="mod-line"><b>Gupta Wholesale</b><span class="m">₹42,100 · Due</span></div>
+          <div class="mod-line"><b>Kochi Distributors</b><span class="m">₹9,850 · Paid</span></div>
+        </div>
+      </article>
+
+      <!-- ITEMS (tall tile) -->
+      <article class="mod items" tabindex="0" role="group" data-mod="items" data-links="sales purchase returns" aria-label="Item Management module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.3 12 12l8.7-4.7M12 22V12"/></svg></span>
+          <span class="mod-nm">Items</span>
+        </div>
+        <div class="mrows">
+          <div class="mrow"><b>Cotton Saree · SR-104</b><span class="val">38 in stock</span></div>
+          <div class="mrow"><b>Silk Dupatta · DP-221</b><span class="val">12 in stock</span></div>
+          <div class="mrow"><b>Kurta Set · KS-310</b><span class="val">3 left</span></div>
+          <div class="mrow"><b>Linen Shirt · LS-088</b><span class="val">54 in stock</span></div>
+        </div>
+      </article>
+
+      <!-- PAYMENTS -->
+      <article class="mod payments" tabindex="0" role="group" data-mod="payments" data-links="sales purchase expense staff" aria-label="Payment Accounts module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+          <span class="mod-nm">Payments</span>
+        </div>
+        <div class="mod-lines">
+          <div class="mod-line"><b>HDFC Current</b><span class="m">₹3.4L</span></div>
+          <div class="mod-line"><b>Cash drawer</b><span class="m">₹18,240</span></div>
+        </div>
+      </article>
+
+      <!-- RETURNS -->
+      <article class="mod returns" tabindex="0" role="group" data-mod="returns" data-links="sales items" aria-label="Returns Management module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span>
+          <span class="mod-nm">Returns</span>
+        </div>
+        <div class="mod-lines">
+          <div class="mod-line"><b>INV-2031</b><span class="m">₹2,150 back</span></div>
+          <div class="mod-line"><b>Ledger &amp; stock</b><span class="m">rebalanced</span></div>
+        </div>
+      </article>
+
+      <!-- EXPENSE & INCOME (wide tile) -->
+      <article class="mod expense" tabindex="0" role="group" data-mod="expense" data-links="payments" aria-label="Expense and Income Tracking module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></span>
+          <span class="mod-nm">Expense &amp; Income</span>
+        </div>
+        <div class="spark" aria-hidden="true">
+          <i style="height:42%"></i><i style="height:60%"></i><i style="height:38%"></i><i class="up" style="height:78%"></i><i style="height:52%"></i><i style="height:66%"></i><i class="up" style="height:90%"></i><i style="height:48%"></i>
+        </div>
+        <div class="mod-stat"><b>₹1.18L</b><span>net this month · income minus expenses</span></div>
+      </article>
+
+      <!-- STAFF & SALARY -->
+      <article class="mod staff" tabindex="0" role="group" data-mod="staff" data-links="payments expense" aria-label="Staff and Salary module">
+        <span class="mod-flag">Linked</span>
+        <div class="mod-hd">
+          <span class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+          <span class="mod-nm">Staff &amp; Salary</span>
+        </div>
+        <div class="mod-lines">
+          <div class="mod-line"><b>July payroll</b><span class="m">6 staff</span></div>
+          <div class="mod-line"><b>Paid out</b><span class="m">₹94,000</span></div>
+        </div>
+      </article>
+
     </div>
 
-    <div class="tab-panel active" id="t1" role="tabpanel">
-      <div>
-        <h3>Sales Invoicing</h3>
-        <p>Create, send, and track sales invoices with ease. Stay on top of what’s owed and what’s paid — with taxes, discounts, and rounding handled correctly every time.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2041 · Sharma Kirana</b><span class="end">₹18,500 <span class="chip">Sent</span></span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2040 · Menon Traders</b><span class="end">₹6,320 <span class="chip live"><span class="d"></span>Paid</span></span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 12h6M9 16h4M7 3h10l2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5z"/></svg></span><b>INV-2039 · Fab Textiles</b><span class="end">₹13,000 <span class="chip">Overdue</span></span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t2" role="tabpanel">
-      <div>
-        <h3>Purchase Invoicing</h3>
-        <p>Manage supplier bills and purchase records in one place — no more chasing paper trails. Stock and payables update the moment a bill lands.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span><b>Bill · Gupta Wholesale</b><span class="end">₹42,100 <span class="chip">Due 12 Jul</span></span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span><b>Bill · Kochi Distributors</b><span class="end">₹9,850 <span class="chip live"><span class="d"></span>Paid</span></span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg></span><b>Stock updated automatically</b><span class="end">+240 units</span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t3" role="tabpanel">
-      <div>
-        <h3>Item Management</h3>
-        <p>Organize your entire catalog with full control over items, pricing, and details — one source of truth for every module that touches stock.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.3 12 12l8.7-4.7M12 22V12"/></svg></span><b>Cotton Saree — SR-104</b><span class="end">₹1,450 · 38 in stock</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.3 12 12l8.7-4.7M12 22V12"/></svg></span><b>Silk Dupatta — DP-221</b><span class="end">₹899 · 12 in stock</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span><b>Kurta Set — KS-310</b><span class="end">low stock · 3 left</span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t4" role="tabpanel">
-      <div>
-        <h3>Returns Management</h3>
-        <p>Handle sales and purchase returns smoothly, with your books updated automatically — refunds, credit, and stock all reconcile themselves.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span><b>Return · INV-2031</b><span class="end">₹2,150 refunded</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/></svg></span><b>Purchase return · Gupta Wholesale</b><span class="end">−18 units</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><b>Ledger &amp; stock rebalanced</b><span class="end">automatic</span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t5" role="tabpanel">
-      <div>
-        <h3>Expense &amp; Income Tracking</h3>
-        <p>Log every expense and income stream. Know exactly where your money goes — and where it comes from — without spreadsheet gymnastics.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 19V5m0 0-5 5m5-5 5 5"/></svg></span><b>Shop rent — July</b><span class="end">₹22,000</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14m0 0 5-5m-5 5-5-5"/></svg></span><b>Commission income</b><span class="end">₹4,600</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></span><b>Net this month</b><span class="end">₹1.18L</span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t6" role="tabpanel">
-      <div>
-        <h3>Payment Accounts</h3>
-        <p>Manage multiple payment accounts and keep every transaction reconciled and organized — cash, bank, and UPI in one view.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><b>HDFC Current A/C</b><span class="end">₹3.4L</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><b>Cash drawer</b><span class="end">₹18,240</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><b>Reconciled today</b><span class="end">34 transactions</span></div>
-      </div>
-    </div>
-    <div class="tab-panel" id="t7" role="tabpanel">
-      <div>
-        <h3>Staff &amp; Salary</h3>
-        <p>A lightweight staff module to manage your team and handle salary payouts — without the HR-suite bloat.</p>
-      </div>
-      <div class="tab-art" aria-hidden="true">
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></span><b>July payroll</b><span class="end">6 staff · ₹94,000</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><b>Anil — salary paid</b><span class="end">₹16,000</span></div>
-        <div class="art-row"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><b>Meera — advance adjusted</b><span class="end">₹−2,000</span></div>
-      </div>
-    </div>
+    <p class="board-hint" id="board-hint" aria-live="polite">Hover or focus a module to trace how it connects across your back office.</p>
   </div>
 </section>
 
 <script>
-/* ===== modules tabs: auto-advance w/ progress; any manual click hands control to the user ===== */
+/* ===== modular board: trace a module's workflow connections on hover/focus =====
+   Progressive enhancement — every tile is fully visible without JS; this only adds
+   the dim/highlight trace and the live caption. Reduced-motion keeps state changes instant. */
 (function(){
-  const rail=document.getElementById('mod-rail');
-  const btns=[...rail.querySelectorAll('.tab-btn')];
-  const DUR=5000; let idx=0, timer=null, manual=false;
-  function show(i){
-    idx=i;
-    btns.forEach((b,j)=>{b.classList.toggle('active',j===i);b.setAttribute('aria-selected',j===i);});
-    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===btns[i].dataset.tab));
+  const board=document.getElementById('board');
+  const hint=document.getElementById('board-hint');
+  if(!board||!hint) return;
+  const tiles=[...board.querySelectorAll('.mod')];
+  const NAMES={sales:'Sales Invoicing',purchase:'Purchase Invoicing',items:'Items',
+    returns:'Returns',expense:'Expense & Income',payments:'Payments',staff:'Staff & Salary'};
+  const DEFAULT=hint.textContent;
+
+  const listFmt = (typeof Intl!=='undefined' && Intl.ListFormat)
+    ? new Intl.ListFormat('en',{style:'long',type:'conjunction'})
+    : {format:a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]};
+
+  function activate(el){
+    const links=(el.dataset.links||'').split(' ').filter(Boolean);
+    board.classList.add('has-active');
+    tiles.forEach(t=>t.classList.remove('active','linked'));
+    el.classList.add('active');
+    links.forEach(m=>{const t=board.querySelector('[data-mod="'+m+'"]');if(t)t.classList.add('linked');});
+    hint.textContent = NAMES[el.dataset.mod]+' connects to '+listFmt.format(links.map(m=>NAMES[m]))+'.';
+    hint.classList.add('lit');
   }
-  function arm(){ if(manual||reduceMotion) return; clearTimeout(timer);
-    timer=setTimeout(()=>{show((idx+1)%btns.length);arm();},DUR); }
-  btns.forEach((b,i)=>b.addEventListener('click',()=>{manual=true;clearTimeout(timer);show(i);}));
-  const sec=document.getElementById('modules');
-  sec.addEventListener('pointerenter',()=>clearTimeout(timer));
-  sec.addEventListener('pointerleave',arm);
-  new IntersectionObserver(es=>es.forEach(e=>{e.isIntersecting?arm():clearTimeout(timer);}),{threshold:.3}).observe(sec);
-  const rail=document.getElementById('mod-rail'), wrap=document.getElementById('mod-rail-wrap');
-  if(rail && wrap){
-    rail.addEventListener('scroll',()=>{
-      const end=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-16;
-      wrap.classList.toggle('scrolled-end',end);
-    },{passive:true});
+  function clearAll(){
+    board.classList.remove('has-active');
+    tiles.forEach(t=>t.classList.remove('active','linked'));
+    hint.textContent=DEFAULT;
+    hint.classList.remove('lit');
   }
+
+  tiles.forEach(t=>{
+    t.addEventListener('pointerenter',()=>activate(t));
+    t.addEventListener('focus',()=>activate(t));
+  });
+  board.addEventListener('pointerleave',clearAll);
+  board.addEventListener('focusout',e=>{ if(!board.contains(e.relatedTarget)) clearAll(); });
 })();
 </script>

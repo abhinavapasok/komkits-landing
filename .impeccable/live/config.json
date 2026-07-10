@@ -1,0 +1,6 @@
+{
+  "files": ["komkits-landing-mockup.html", "public/index.html"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

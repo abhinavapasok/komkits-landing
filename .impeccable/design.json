@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-10T14:00:00+05:30",
+  "title": "Design System: KomKits Landing",
+  "extensions": {
+    "colorMeta": {
+      "ink-900": { "role": "primary", "displayName": "Control Ink", "canonical": "#111214", "tonalRamp": ["#0A0B0C", "#111214", "#26272B", "#3F3F46", "#6B7280", "#9CA3AF", "#E4E4E7", "#FAFAFA"] },
+      "primary-hover": { "role": "primary", "displayName": "Ink Hover", "canonical": "#26272B", "tonalRamp": ["#0A0B0C", "#111214", "#26272B", "#3F3F46", "#6B7280", "#9CA3AF", "#E4E4E7", "#FAFAFA"] },
+      "ink-700": { "role": "neutral", "displayName": "Ink 700", "canonical": "#3F3F46", "tonalRamp": ["#111214", "#26272B", "#3F3F46", "#52525B", "#6B7280", "#9CA3AF", "#D4D4D8", "#F4F4F5"] },
+      "ink-500": { "role": "neutral", "displayName": "Ink 500 (muted workhorse)", "canonical": "#6B7280", "tonalRamp": ["#111214", "#3F3F46", "#52525B", "#6B7280", "#9CA3AF", "#C7CBD1", "#E4E4E7", "#FAFAFA"] },
+      "ink-400": { "role": "neutral", "displayName": "Ink 400 (lightest usable)", "canonical": "#9CA3AF", "tonalRamp": ["#3F3F46", "#6B7280", "#9CA3AF", "#B5BAC2", "#CBCFD5", "#E4E4E7", "#F4F4F5", "#FAFAFA"] },
+      "grey-100": { "role": "neutral", "displayName": "Grey 100 (chip/inset)", "canonical": "#F4F4F5", "tonalRamp": ["#6B7280", "#9CA3AF", "#D4D4D8", "#E4E4E7", "#F4F4F5", "#FAFAFA", "#FCFCFC", "#FFFFFF"] },
+      "grey-200": { "role": "neutral", "displayName": "Grey 200 (hairline border)", "canonical": "#E4E4E7", "tonalRamp": ["#6B7280", "#9CA3AF", "#C7CBD1", "#E4E4E7", "#EDEDEF", "#F4F4F5", "#FAFAFA", "#FFFFFF"] },
+      "white": { "role": "neutral", "displayName": "Page White", "canonical": "#FFFFFF", "tonalRamp": ["#E4E4E7", "#EDEDEF", "#F4F4F5", "#FAFAFA", "#FCFCFC", "#FEFEFE", "#FFFFFF", "#FFFFFF"] },
+      "success": { "role": "tertiary", "displayName": "Live Green", "canonical": "#00A04D", "tonalRamp": ["#00301A", "#00502B", "#00703C", "#00A04D", "#3FBE79", "#A9E3C3", "#E0F5EA", "#F1FBF6"] },
+      "info": { "role": "tertiary", "displayName": "Coming-Soon Teal", "canonical": "#008694", "tonalRamp": ["#002B30", "#004A52", "#006974", "#008694", "#3FAAB4", "#A5DEE2", "#E0F4F5", "#F1FAFB"] },
+      "warning": { "role": "tertiary", "displayName": "Attention Amber", "canonical": "#AD6800", "tonalRamp": ["#3A2300", "#5C3900", "#8A5300", "#AD6800", "#D99A2E", "#FFE58F", "#FFF7E0", "#FFFCF2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero H1 only. The single loudest element; capped at 64px." },
+      "headline": { "displayName": "Headline", "purpose": "Section H2s, weight 800, text-wrap balance." },
+      "title": { "displayName": "Title", "purpose": "Card titles, feature names, nav brand." },
+      "body": { "displayName": "Body", "purpose": "Default prose; ledes at 17px Ink 500, capped ~56ch." },
+      "label": { "displayName": "Label / Eyebrow", "purpose": "Uppercase tracked kicker. Rationed, not on every section." },
+      "mono": { "displayName": "Mono", "purpose": "API-key chips and code-like tokens only." }
+    },
+    "shadows": [
+      { "name": "ambient-z1", "value": "0 1px 2px rgba(17,18,20,.06), 0 1px 3px rgba(17,18,20,.08)", "purpose": "Barely-there resting lift for cards and sliders." },
+      { "name": "ambient-z2", "value": "0 8px 24px rgba(17,18,20,.10)", "purpose": "Raised state for popovers, active demo cards, hover lift." },
+      { "name": "floating-glass-nav", "value": "0 1px 3px rgba(17,18,20,.04), 0 8px 32px rgba(17,18,20,.06)", "purpose": "The sticky frosted nav pill — the only sanctioned glass element." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(.2,.8,.4,1)", "purpose": "Default easing (--ease) for every state transition." },
+      { "name": "dur-standard", "value": "200ms", "purpose": "Default transition duration (--dur)." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The default CTA everywhere — ink-black fill, quiet and confident.",
+      "html": "<button class=\"ds-btn-primary\">Get Started Free</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 24px;font-family:'Public Sans',system-ui,sans-serif;font-size:15px;font-weight:600;color:#fff;background:#111214;border:1px solid transparent;border-radius:4px;cursor:pointer;transition:background 200ms cubic-bezier(.2,.8,.4,1),transform 120ms cubic-bezier(.2,.8,.4,1)}.ds-btn-primary:hover{background:#26272B}.ds-btn-primary:active{transform:scale(.98)}.ds-btn-primary:focus-visible{outline:2px solid #111214;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Lower-commitment CTA — white fill, hairline border that darkens on hover.",
+      "html": "<button class=\"ds-btn-secondary\">See What's Coming</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 24px;font-family:'Public Sans',system-ui,sans-serif;font-size:15px;font-weight:600;color:#111214;background:#fff;border:1px solid #E4E4E7;border-radius:4px;cursor:pointer;transition:border-color 200ms cubic-bezier(.2,.8,.4,1),transform 120ms cubic-bezier(.2,.8,.4,1)}.ds-btn-secondary:hover{border-color:#111214}.ds-btn-secondary:active{transform:scale(.98)}.ds-btn-secondary:focus-visible{outline:2px solid #111214;outline-offset:2px}"
+    },
+    {
+      "name": "Live Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-live",
+      "description": "Signature component — marks a shipping-today module. Carries the color budget.",
+      "html": "<span class=\"ds-chip ds-chip-live\"><span class=\"ds-d\"></span>Live</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:6px;font-family:'Public Sans',system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid #E4E4E7;background:#F4F4F5;color:#3F3F46}.ds-chip .ds-d{width:6px;height:6px;border-radius:50%;background:currentColor}.ds-chip-live{background:#E0F5EA;border-color:#A9E3C3;color:#00A04D}"
+    },
+    {
+      "name": "Coming-Soon Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Teal roadmap marker for integrations and workflows not yet live.",
+      "html": "<span class=\"ds-chip ds-chip-soon\"><span class=\"ds-d\"></span>Coming Soon</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:6px;font-family:'Public Sans',system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid #E4E4E7;background:#F4F4F5;color:#3F3F46}.ds-chip .ds-d{width:6px;height:6px;border-radius:50%;background:currentColor}.ds-chip-soon{background:#E0F4F5;border-color:#A5DEE2;color:#008694}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Resting surface — flat, white, hairline-bordered. Depth is a state response, not a resting property.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Sales Invoicing</h3><p class=\"ds-card-body\">Create, send, and track invoices. Stay on top of what's owed and what's paid.</p></div>",
+      "css": ".ds-card{background:#fff;border:1px solid #E4E4E7;border-radius:8px;padding:24px;transition:box-shadow 200ms cubic-bezier(.2,.8,.4,1),transform 200ms cubic-bezier(.2,.8,.4,1)}.ds-card:hover{box-shadow:0 8px 24px rgba(17,18,20,.10)}.ds-card-title{font-family:'Public Sans',system-ui,sans-serif;font-size:17px;font-weight:700;letter-spacing:-.01em;color:#111214;margin:0 0 6px}.ds-card-body{font-family:'Public Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;color:#6B7280;margin:0}"
+    },
+    {
+      "name": "Floating Nav Pill",
+      "kind": "nav",
+      "refersTo": "card",
+      "description": "The one glass element — a frosted pill that firms up on scroll.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-brand\"><span class=\"ds-brand-mark\"></span>KomKits</a><span class=\"ds-nav-links\"><a class=\"ds-nav-link ds-active\">Product</a><a class=\"ds-nav-link\">Pricing</a></span><button class=\"ds-nav-cta\">Get Started</button></nav>",
+      "css": ".ds-nav{display:inline-flex;align-items:center;gap:8px;min-height:56px;padding:0 8px 0 20px;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);border:1px solid rgba(228,228,231,.6);border-radius:16px;box-shadow:0 1px 3px rgba(17,18,20,.04),0 8px 32px rgba(17,18,20,.06);font-family:'Public Sans',system-ui,sans-serif}.ds-brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.02em;color:#111214;text-decoration:none}.ds-brand-mark{width:30px;height:30px;border-radius:8px;background:#111214}.ds-nav-links{display:flex;gap:2px;background:rgba(244,244,245,.6);border-radius:10px;padding:3px;margin:0 8px}.ds-nav-link{font-size:13.5px;font-weight:600;color:#6B7280;text-decoration:none;padding:7px 14px;border-radius:8px}.ds-nav-link.ds-active,.ds-nav-link:hover{color:#111214;background:#fff;box-shadow:0 1px 4px rgba(17,18,20,.08)}.ds-nav-cta{min-height:36px;padding:7px 16px;font-size:13.5px;font-weight:600;color:#fff;background:#111214;border:none;border-radius:10px;cursor:pointer}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Control Room",
+    "overview": "KomKits presents the whole of a business — invoicing, inventory, payments, returns — on a single monochrome instrument surface where everything is visible at once and nothing shouts. Ink (#111214) on white (#FFFFFF), with a small grey scale for every intermediate tone. Color is not decoration; it is a signal light — the only saturated hues are the three status colors (live-green, coming-soon-teal, attention-amber), used exclusively to mark state. This is capable, calm, modern made visual, aimed at effortless relief. It rejects the dark dev-tool aesthetic, maximalist Framer motion, playful Clay 3D, dense legacy-ERP chrome, and generic AI-SaaS slop.",
+    "keyCharacteristics": [
+      "Ink-on-white monochrome; a single near-black plus a four-step grey scale.",
+      "Status color is the only saturation — green (live), teal (coming-soon), amber (attention).",
+      "Flat surfaces, hairline #E4E4E7 borders, soft ambient shadows; frosted glass reserved for the floating nav.",
+      "One typeface, Public Sans, worked across weights 400–800.",
+      "Tight display tracking (-0.035em), generous 88px section rhythm.",
+      "Motion is scrubbed and reduced-motion-safe; content renders without JS."
+    ],
+    "rules": [
+      { "name": "The Signal-Light Rule", "body": "Saturated color is forbidden as decoration. Green, teal, and amber appear only to communicate status — live, coming-soon, attention. If a color isn't reporting state, it must be ink or grey.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "There is exactly one brand color and it is near-black. Do not introduce a secondary accent to warm up the page; warmth is carried by copy, spacing, and real product UI.", "section": "colors" },
+      { "name": "The Rationed Eyebrow Rule", "body": "The uppercase tracked eyebrow label exists, but a kicker above every section is the AI-slop tell. Use it only where a section genuinely needs a category tag.", "section": "typography" },
+      { "name": "The One-Family Rule", "body": "Public Sans is the only typeface. Contrast comes from weight (400 vs 800) and tracking, not from a new family.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest and bounded by a 1px #E4E4E7 border. Shadow is a response to state (hover, raise, float), not a resting property of every card.", "section": "elevation" },
+      { "name": "The One Glass Rule", "body": "Backdrop-blur belongs to the nav and nowhere else. It is a signal that an element floats above the document.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the body ink-on-white: #111214 on #FFFFFF, with the Grey 50/100/200 scale for every intermediate surface.",
+      "Do reserve all saturation for status — green #00A04D (live), teal #008694 (coming-soon), amber #AD6800 (attention) — via the chip system.",
+      "Do bound surfaces with 1px #E4E4E7 borders and keep them flat; add Ambient z1/z2 shadow only as a state response.",
+      "Do carry hierarchy with Public Sans weight and tracking alone (400 body vs 800 headline; -0.035em display).",
+      "Do cap the hero display at 64px, ledes at ~56ch, and hold to the 88px section rhythm (64px on mobile).",
+      "Do give every animation a prefers-reduced-motion path and render content without JS."
+    ],
+    "donts": [
+      "Don't ship the dark dev-tool aesthetic — no dark-mode-default, no neon accent. This is light and business-facing, not Vercel/Cursor.",
+      "Don't add maximalist Framer-style motion — one earned motion moment per section, scrubbed not scheduled.",
+      "Don't introduce playful Clay-style 3D illustration or pastel blobs; this is a tool people trust with money.",
+      "Don't regress to the legacy accounting/ERP look — no dense gray spreadsheet chrome.",
+      "Don't produce generic AI-SaaS slop: no cream/parchment body, no tracked uppercase eyebrow above every section, no endless identical icon-card grids.",
+      "Don't use color as decoration. If a hue isn't reporting status, make it ink or grey.",
+      "Don't introduce a second typeface or a second brand accent. One family, one voice.",
+      "Don't apply glassmorphism anywhere but the nav.",
+      "Don't let muted text fall below Ink 400 (#9CA3AF) on white, or below 4.5:1 for body copy."
+    ]
+  }
+}
